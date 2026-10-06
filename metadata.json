@@ -1,0 +1,8 @@
+{
+  "name": "Astral Spire: Climb to Floor 100",
+  "description": "An action RPG dungeon crawler. Climb to Floor 100 of the Astral Spire with Zodiac Guilds, procedural music, elemental combos, and dark steel biomes.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ],
+  "permissions": []
+}

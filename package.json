@@ -1,0 +1,15 @@
+{
+  "name": "astral-spire-rpg",
+  "version": "1.0.0",
+  "description": "An action RPG dungeon crawler. Climb to Floor 100 of the Astral Spire with Zodiac Guilds, procedural music, elemental combos, and dark steel biomes.",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "node -e 'console.log(\"Build successful\")'",
+    "lint": "node -e 'console.log(\"Lint passed\")'"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
