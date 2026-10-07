@@ -277,7 +277,11 @@ const Input = (function () {
     KeyL: 'l',
     Space: 'dash', ShiftLeft: 'dash', ShiftRight: 'dash', KeyC: 'dash',
     Escape: 'p', KeyP: 'p',
-    KeyM: 'music'
+    KeyM: 'music',
+    Digit1: 'num1', Digit2: 'num2', Digit3: 'num3',
+    Digit4: 'num4', Digit5: 'num5', Digit6: 'num6',
+    Digit7: 'num7', Digit8: 'num8', Digit9: 'num9',
+    KeyB: 'bag', KeyE: 'bag'
   };
 
   window.addEventListener('keydown', e => {
@@ -313,7 +317,11 @@ const Input = (function () {
         l: !!keys.l || tb.l,
         dash: !!keys.dash || tb.dash,
         p: !!keys.p || tb.p,
-        music: !!keys.music
+        music: !!keys.music,
+        num1: !!keys.num1, num2: !!keys.num2, num3: !!keys.num3,
+        num4: !!keys.num4, num5: !!keys.num5, num6: !!keys.num6,
+        num7: !!keys.num7, num8: !!keys.num8, num9: !!keys.num9,
+        bag: !!keys.bag
       };
       api.cur = cur;
       api.tap = pend;
@@ -711,28 +719,36 @@ const Save = {
 };
 
 function normSave(d) {
+  d = d || {};
   const g = GUILDS.find(x => x[0] === d.guild) || GUILDS[0];
   const inv = d.inv || {}, bo = d.bounty || {}, fl = d.flags || {}, up = d.upgrades || {};
-  
-  // STRICT 9-SLOT BAG INITIALIZATION (EXPANDABLE IN SAFE HAVENS)
-  const bagCap = int(d.bagCapacity, 9, 9, 36);
-  let bag = Array.isArray(d.bag) ? d.bag.slice() : null;
-  if (!bag) {
-    bag = [];
-    const pots = int(inv.potions, 2, 0, 99);
-    if (pots > 0) bag.push({ id: 'potion', name: 'Field Potion', count: pots, icon: '🧪' });
-    while (bag.length < bagCap) bag.push(null);
+  const potCount = int(inv.potions, 2, 0, 99);
+  const bagCap = int(d.bagCapacity, 9, 9, 27);
+  let bagArr = null;
+
+  if (Array.isArray(d.bag) && d.bag.length > 0) {
+    bagArr = d.bag.slice(0, bagCap).map(it => it ? {
+      id: it.id || 'potion',
+      name: it.name || 'Field Potion',
+      count: int(it.count, 1, 1, 99),
+      icon: it.icon || '🧪'
+    } : null);
+    while (bagArr.length < bagCap) bagArr.push(null);
+  } else {
+    bagArr = new Array(bagCap).fill(null);
+    if (potCount > 0) {
+      bagArr[0] = { id: 'potion', name: 'Field Potion', count: potCount, icon: '🧪' };
+    }
   }
-  while (bag.length < bagCap) bag.push(null);
-  if (bag.length > bagCap) bag = bag.slice(0, bagCap);
 
   return {
-    v: 3,
+    v: 2,
     name: String(d.name || 'Climber').slice(0, 12),
     guild: g[0],
     element: g[1],
     outfit: int(d.outfit, 0, 0, 5),
     hair: int(d.hair, 0, 0, 5),
+    hairStyle: int(d.hairStyle, 0, 0, 5),
     floor: int(d.floor, 1, 1, 100),
     loc: d.loc === 'floor' ? 'floor' : 'hub',
     lvl: int(d.lvl, 1, 1, 99),
@@ -740,13 +756,14 @@ function normSave(d) {
     hp: Math.max(1, Number(d.hp) || 1),
     sta: Math.max(0, Number(d.sta) || 0),
     inv: {
-      shards: int(inv.shards, 0, 0, 1e9),
+      shards: int(inv.shards, 25, 0, 1e9),
       bones: int(inv.bones, 0, 0, 1e9),
       circuits: int(inv.circuits, 0, 0, 1e9),
-      potions: int(inv.potions, 0, 0, 99)
+      potions: potCount
     },
     bagCapacity: bagCap,
-    bag: bag,
+    selectedSlot: int(d.selectedSlot, 0, 0, 8),
+    bag: bagArr,
     upgrades: {
       weapon: int(up.weapon, 0, 0, 20),
       armor: int(up.armor, 0, 0, 20),
@@ -1036,7 +1053,9 @@ const Title = {
     T('Classic GBA / Inotia Pixel Action-RPG Edition', 44, 146, 12, '#94a3b8');
 
     // Chibi Hero Preview on Title
-    drawChar(160, 260, { guild: 'Aries', element: 'Fire', outfit: '#e11d48', hair: '#18181b', elc: '#ef4444', fx: 0, fy: 1, moving: true }, this.t, 1.8);
+    drawChibiHero(ctx, 160, 260, {
+      guild: 'Aries', element: 'Fire', outfit: '#e11d48', hair: '#18181b', hairStyle: 0
+    }, this.t, 'down', true);
 
     T('Twelve Zodiac Guilds • Guardian Bosses • 100 Floors', 40, H - 45, 12, '#cbd5e1');
     T('Controls: WASD / Joystick to move | J to interact | K to attack', 40, H - 28, 11, '#64748b');
@@ -1175,7 +1194,9 @@ const Create = {
     ctx.fillStyle = '#020617'; ctx.fillRect(510, 30, 250, 140);
     ctx.strokeStyle = '#facc15'; ctx.strokeRect(510.5, 30.5, 249, 139);
 
-    drawChar(635, 110, { guild: g[0], element: g[1], outfit: OUTFITS[s.o], hair: HAIRS[s.h], elc: e.color, fx: 0, fy: 1, moving: true }, this.t, 2.4);
+    drawChibiHero(ctx, 635, 120, {
+      guild: g[0], element: g[1], outfit: OUTFITS[s.o], hair: HAIRS[s.h], hairStyle: s.hs
+    }, this.t, 'down', true, 2.2);
 
     T(g[0] + ' Guild', 635, 185, 20, e.color, 'center');
     T(g[1] + ' Affinity • ' + e.cls, 635, 212, 12, '#93c5fd', 'center');
@@ -1385,164 +1406,177 @@ const CLIMBERS = {
 };
 
 /* ================= 16. Chibi Character & Monster Renderers ================= */
-/* ================= The User's Exact Character Design with Dynamic Weapon Swinging ================= */
-function drawChar(x, y, o, t, sc = 1) {
+function drawChibiHero(ctx, px, py, p, t, facing = 'down', isMoving = false, scale = 1.0, atkT = 0, atkDur = 0.3) {
   ctx.save();
-  ctx.translate(Math.round(x), Math.round(y));
-  if (sc !== 1) ctx.scale(sc, sc);
+  ctx.translate(px, py);
+  ctx.scale(scale, scale);
 
-  const mv = o.moving, b = mv ? Math.round(Math.sin(t * 14)) : 0, up = o.fy < -0.5;
+  const step = isMoving ? Math.floor(t * 8) % 4 : 0;
+  const bob = isMoving ? (step % 2 === 1 ? -1 : 0) : Math.sin(t * 3) * 0.8;
+  const legOffset = isMoving ? (step === 1 ? -2 : (step === 3 ? 2 : 0)) : 0;
 
-  // Ground shadow
-  ctx.fillStyle = 'rgba(0,0,0,.35)';
-  ctx.fillRect(-7, -2, 14, 4);
+  // Soft oval drop shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.beginPath();
+  ctx.ellipse(0, 14, 10, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-  // Moving legs
-  ctx.fillStyle = '#20222c';
-  ctx.fillRect(-4, -5, 3, 5 + (mv ? b : 0) * -1);
-  ctx.fillRect(1, -5, 3, 5 + (mv ? b : 0));
+  // Adventurer boots with cuffs
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(-7, 8 + legOffset, 5, 6 - legOffset);
+  ctx.fillRect(2, 8 - legOffset, 5, 6 + legOffset);
+  ctx.fillStyle = '#475569';
+  ctx.fillRect(-7, 8, 5, 2); ctx.fillRect(2, 8, 5, 2);
 
-  // Outfit body
-  ctx.fillStyle = o.outfit || '#d94a3d';
-  ctx.fillRect(-5, -14 + b, 10, 10);
-  ctx.fillStyle = 'rgba(255,255,255,.35)';
-  ctx.fillRect(-5, -9 + b, 10, 1);
-  ctx.fillStyle = o.elc || '#ff5a3c';
-  ctx.fillRect(-1, -14 + b, 2, 3);
-
-  // Head & Skin
-  ctx.fillStyle = '#f2c9a0';
-  ctx.fillRect(-4, -21 + b, 8, 7);
-
-  // Hair
-  ctx.fillStyle = o.hair || '#2b1d14';
-  ctx.fillRect(-5, -23 + b, 10, 4);
-  ctx.fillRect(-5, -21 + b, 2, 5);
-  ctx.fillRect(3, -21 + b, 2, 5);
-
-  if (up) {
-    ctx.fillRect(-4, -19 + b, 8, 4);
-  } else {
-    ctx.fillStyle = '#111';
-    ctx.fillRect(-2, -18 + b, 1, 2);
-    ctx.fillRect(1, -18 + b, 1, 2);
+  // Cloak / Cape (Flutters dynamically behind hero with physics)
+  const capeSway = isMoving ? Math.sin(t * 12) * 3.5 : Math.sin(t * 2.5) * 1.2;
+  ctx.fillStyle = p.outfit || '#e11d48';
+  if (facing !== 'up') {
+    ctx.beginPath();
+    ctx.moveTo(-9, -4 + bob);
+    ctx.lineTo(-11 + capeSway, 10 + bob);
+    ctx.lineTo(11 + capeSway, 10 + bob);
+    ctx.lineTo(9, -4 + bob);
+    ctx.closePath();
+    ctx.fill();
   }
 
-  // WEAPON SWINGING & USAGE ANIMATION
-  const isAttacking = (o.atkT !== undefined && o.atkT > 0);
-  if (isAttacking) {
-    const prog = clamp(1 - (o.atkT / 0.18), 0, 1);
+  // Tunic & Leather Armor Body
+  ctx.fillStyle = '#1e293b'; ctx.fillRect(-7, -6 + bob, 14, 12);
+  ctx.fillStyle = p.outfit || '#e11d48'; ctx.fillRect(-5, -6 + bob, 10, 10);
+  ctx.fillStyle = '#d97706'; ctx.fillRect(-6, 2 + bob, 12, 2); // Leather Belt
+  ctx.fillStyle = '#facc15'; ctx.fillRect(-2, 1 + bob, 4, 4); // Gold Buckle
 
-    // Hand anchor coordinates on the character
-    let hx = (o.fx >= 0 ? 5 : -5), hy = -10 + b;
-    if (o.fy > 0.5) { hx = 2; hy = -8 + b; }
-    else if (o.fy < -0.5) { hx = -2; hy = -12 + b; }
+  // Elemental Crest on Chest
+  const elColor = (p.element && ELEM[p.element]) ? ELEM[p.element].color : (p.elc || '#38bdf8');
+  ctx.fillStyle = elColor;
+  ctx.fillRect(-2, -3 + bob, 4, 4);
+
+  // Cape in front when facing Up
+  if (facing === 'up') {
+    ctx.fillStyle = p.outfit || '#e11d48';
+    ctx.beginPath();
+    ctx.moveTo(-8, -4 + bob);
+    ctx.lineTo(-10 + capeSway, 10 + bob);
+    ctx.lineTo(10 + capeSway, 10 + bob);
+    ctx.lineTo(8, -4 + bob);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Chibi Head & Anime Face
+  ctx.fillStyle = '#fed7aa'; ctx.fillRect(-8, -20 + bob, 16, 14); // Skin
+  ctx.fillStyle = '#fca5a5'; ctx.fillRect(-7, -11 + bob, 3, 2); ctx.fillRect(4, -11 + bob, 3, 2); // Rosy blush
+
+  if (facing === 'up') {
+    ctx.fillStyle = p.hair || '#18181b';
+    ctx.fillRect(-8, -22 + bob, 16, 16);
+  } else {
+    // Big Expressive Anime Eyes with Highlights & Realistic Blinking
+    const blink = Math.floor(t * 1.5) % 8 === 0;
+    if (blink) {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-6, -14 + bob, 4, 1.5); ctx.fillRect(2, -14 + bob, 4, 1.5);
+    } else {
+      ctx.fillStyle = '#0284c7';
+      if (facing === 'down') {
+        ctx.fillRect(-6, -15 + bob, 4, 5); ctx.fillRect(2, -15 + bob, 4, 5);
+        ctx.fillStyle = '#0f172a'; ctx.fillRect(-5, -14 + bob, 3, 3); ctx.fillRect(3, -14 + bob, 3, 3);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(-5, -15 + bob, 2, 2); ctx.fillRect(3, -15 + bob, 2, 2);
+      } else if (facing === 'left') {
+        ctx.fillRect(-7, -15 + bob, 4, 5);
+        ctx.fillStyle = '#0f172a'; ctx.fillRect(-6, -14 + bob, 3, 3);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(-6, -15 + bob, 2, 2);
+      } else if (facing === 'right') {
+        ctx.fillRect(3, -15 + bob, 4, 5);
+        ctx.fillStyle = '#0f172a'; ctx.fillRect(3, -14 + bob, 3, 3);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(3, -15 + bob, 2, 2);
+      }
+    }
+  }
+
+  // Layered Pixel Hair with Highlight Sheen
+  ctx.fillStyle = p.hair || '#18181b';
+  ctx.fillRect(-9, -24 + bob, 18, 7); // Hair crown
+  ctx.fillRect(-10, -20 + bob, 3, 10); ctx.fillRect(7, -20 + bob, 3, 10); // Sideburns
+  if (facing !== 'up') {
+    ctx.fillRect(-6, -18 + bob, 4, 3); ctx.fillRect(1, -18 + bob, 4, 3); // Front bangs
+  }
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.45)'; ctx.fillRect(-6, -23 + bob, 12, 2); // Hair highlight
+
+  // ================= DYNAMIC WEAPON SWINGING & VISIBLE BLADE =================
+  const isAttacking = atkT > 0;
+  if (isAttacking) {
+    const progress = clamp(1 - atkT / (atkDur || 0.3), 0, 1);
+    let baseAngle = 0;
+    if (facing === 'down') baseAngle = Math.PI / 2;
+    else if (facing === 'up') baseAngle = -Math.PI / 2;
+    else if (facing === 'left') baseAngle = Math.PI;
+    else if (facing === 'right') baseAngle = 0;
+
+    // Swing from -1.1 rad to +1.1 rad across facing direction
+    const swingAngle = baseAngle - 1.1 + progress * 2.2;
+    const hx = Math.cos(baseAngle) * 4;
+    const hy = Math.sin(baseAngle) * 4;
+    const bladeLen = 22;
 
     ctx.save();
-    ctx.translate(hx, hy);
-
-    // Dynamic rotation angle based on facing direction and swing progress
-    let swingAngle = 0;
-    if (o.fx > 0.3) {
-      swingAngle = -1.3 + prog * 2.6; // Facing Right
-    } else if (o.fx < -0.3) {
-      swingAngle = Math.PI + 1.3 - prog * 2.6; // Facing Left
-    } else if (o.fy > 0.5) {
-      swingAngle = -0.9 + prog * 2.5; // Facing Down
-    } else {
-      swingAngle = -Math.PI / 2 + (prog - 0.5) * 2.0; // Facing Up
-    }
-
+    ctx.translate(hx, hy + bob);
     ctx.rotate(swingAngle);
 
-    // The Weapon Held in Hand: Staff shaft & glowing elemental blade
-    ctx.fillStyle = '#b8bcc8'; ctx.fillRect(0, -2, 22, 3);
-    ctx.fillStyle = o.elc || '#ff5a3c'; ctx.fillRect(17, -5, 7, 9);
-    ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillRect(19, -3, 3, 5);
+    // Metallic Blade
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, -2, bladeLen, 4);
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(0, 0, bladeLen - 2, 2);
+    // Elemental Guard
+    ctx.fillStyle = elColor;
+    ctx.fillRect(0, -5, 4, 10);
+    // Pommel & Hilt
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(-6, -1.5, 6, 3);
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(-7, -2, 2, 4);
     ctx.restore();
 
-    // Vibrant Crescent Blade Slash Arc in the Air
+    // Glowing Crescent Elemental Slash Arc Trail
     ctx.save();
-    const a = Math.atan2(o.fy, o.fx);
-    const r = 26;
-    ctx.strokeStyle = o.elc || '#ff5a3c';
-    ctx.lineWidth = (o.combo === 2 ? 6 : 4);
+    ctx.strokeStyle = elColor;
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.85 * (1 - progress);
     ctx.beginPath();
-    ctx.arc(hx, hy, r, a - 1.1, a + 1.1);
+    ctx.arc(hx, hy + bob, bladeLen + 4, swingAngle - 0.7, swingAngle + 0.3);
     ctx.stroke();
 
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.8;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(hx, hy, r - 1, a - 0.85, a + 0.85);
+    ctx.arc(hx, hy + bob, bladeLen + 3, swingAngle - 0.5, swingAngle + 0.2);
     ctx.stroke();
 
-    // Spark at the tip
-    ctx.fillStyle = '#fde047';
-    ctx.fillRect(hx + Math.cos(a + 0.9) * r, hy + Math.sin(a + 0.9) * r, 3, 3);
+    // Spark Burst at Blade Tip
+    const tipX = hx + Math.cos(swingAngle) * bladeLen;
+    const tipY = hy + bob + Math.sin(swingAngle) * bladeLen;
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(tipX - 2, tipY - 2, 4, 4);
+    ctx.fillStyle = elColor; ctx.fillRect(tipX - 1, tipY - 1, 2, 2);
     ctx.restore();
   } else {
-    // When not attacking: Weapon rests on back/shoulder as in user's design!
-    const sx = o.fx >= 0 ? 7 : -8;
-    ctx.fillStyle = '#b8bcc8'; ctx.fillRect(sx, -22 + b, 2, 21);
-    ctx.fillStyle = o.elc || '#ff5a3c'; ctx.fillRect(sx - 2, -27 + b, 6, 6);
-    ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.fillRect(sx - 1, -26 + b, 2, 2);
+    // When Idle or Moving: Hero holds weapon ready in hand with glowing elemental gem guard!
+    const wx = facing === 'left' ? -13 : 10;
+    const wy = -1 + bob;
+    // Blade
+    ctx.fillStyle = '#e2e8f0'; ctx.fillRect(wx, wy - 9, 3, 17);
+    ctx.fillStyle = '#94a3b8'; ctx.fillRect(wx + 2, wy - 9, 1, 17);
+    // Elemental Crossguard
+    ctx.fillStyle = elColor; ctx.fillRect(wx - 2, wy - 2, 7, 3);
+    // Pommel
+    ctx.fillStyle = '#facc15'; ctx.fillRect(wx - 0.5, wy - 11, 4, 3);
+    // Leather Wrapped Grip
+    ctx.fillStyle = '#78350f'; ctx.fillRect(wx, wy - 8, 3, 6);
   }
 
   ctx.restore();
-}
-
-/* ================= The User's Exact Monsters (Drone, Anomaly, Bosses) ================= */
-function drawEnemy(ctx, e, t) {
-  if (e.type === 'boss' && e.state === 'tele' && (e.pat === 'volley' || e.pat === 'charge' || e.pat === 'blink')) {
-    if (e.pat !== 'blink') {
-      const len = e.pat === 'charge' ? 460 : 280;
-      ctx.strokeStyle = e.col;
-      ctx.globalAlpha = .25 + .35 * (1 - e.st / PATTERNS[e.pat].tele);
-      ctx.lineWidth = e.pat === 'charge' ? 26 : 3;
-      ctx.beginPath(); ctx.moveTo(e.x, e.y); ctx.lineTo(e.x + Math.cos(e.aim) * len, e.y + Math.sin(e.aim) * len); ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-  }
-
-  const bob = Math.sin(t * 6 + e.ph) * 2, f = e.flash > 0;
-  ctx.save();
-  ctx.translate(Math.round(e.x), Math.round(e.y + bob));
-
-  ctx.fillStyle = 'rgba(0,0,0,.35)';
-  ctx.fillRect(-e.w / 2, e.h / 2 + 2 - bob, e.w, 3);
-
-  if (e.type === 'boss') {
-    const tele = e.state === 'tele', rec = e.state === 'rec', fl = f || (tele && Math.floor(t * 14) % 2);
-    if (e.pat === 'blink' && tele) ctx.globalAlpha = .35 + .3 * Math.sin(t * 30);
-    ctx.fillStyle = fl ? '#fff' : '#252a38'; ctx.fillRect(-16, -13, 32, 26);
-    ctx.fillStyle = fl ? '#fff' : '#454c5e'; ctx.fillRect(-23, -9, 7, 18); ctx.fillRect(16, -9, 7, 18);
-    ctx.fillStyle = e.col; ctx.fillRect(-16, -13, 32, 3); ctx.fillRect(-16, 10, 32, 3); ctx.fillRect(-23, -9, 7, 2); ctx.fillRect(16, -9, 7, 2);
-    ctx.fillStyle = rec ? '#6a7080' : e.col; ctx.globalAlpha *= .75 + .25 * Math.sin(t * 8); ctx.fillRect(-6, -5, 12, 10); ctx.globalAlpha = 1;
-    ctx.fillStyle = '#fff'; ctx.fillRect(-2, -2, 4, 4);
-    for (let i = 0; i < e.phase; i++) { ctx.fillStyle = e.col; ctx.fillRect(-8 + i * 7, -19, 5, 4); }
-    if (rec) T('...', 0, -34, 12, '#9fb0d0', 'center');
-  } else if (e.type === 'anomaly') {
-    ctx.fillStyle = f ? '#fff' : '#1f3a6e';
-    ctx.beginPath(); ctx.arc(0, 0, e.w / 2 + 1 + Math.sin(t * 5 + e.ph), 0, 6.3); ctx.fill();
-    ctx.fillStyle = f ? '#fff' : '#58b2ff';
-    ctx.beginPath(); ctx.arc(0, 0, 4, 0, 6.3); ctx.fill();
-    ctx.fillStyle = '#ff2b2b'; ctx.fillRect(-1, -7, 3, 3);
-  } else {
-    // The Security Drone
-    const s = 1.35; ctx.scale(s, s);
-    ctx.fillStyle = f ? '#fff' : '#2a2f3a'; ctx.fillRect(-7, -5, 14, 10);
-    ctx.fillStyle = f ? '#fff' : '#454c5e'; ctx.fillRect(-9, -7, 4, 2); ctx.fillRect(5, -7, 4, 2);
-    ctx.fillStyle = '#ff2b2b'; ctx.globalAlpha = .7 + .3 * Math.sin(t * 8 + e.ph); ctx.fillRect(-2, -2, 4, 4); ctx.globalAlpha = 1;
-    ctx.fillStyle = '#58b2ff'; ctx.fillRect(-6, 2, 3, 2);
-  }
-  ctx.restore();
-
-  if (e.hp < e.max && e.type !== 'boss') {
-    const hPct = e.hp / e.max;
-    ctx.fillStyle = '#0f172a'; ctx.fillRect(e.x - 12, e.y - e.h / 2 - 12, 24, 4);
-    ctx.fillStyle = '#ef4444'; ctx.fillRect(e.x - 12, e.y - e.h / 2 - 12, 24 * hPct, 4);
-  }
 }
 
 function drawSlime(ctx, x, y, e, t) {
@@ -1701,6 +1735,63 @@ function drawBoss(ctx, x, y, e, t) {
   ctx.restore();
 }
 
+function drawAnomaly(ctx, x, y, e, t) {
+  ctx.save();
+  ctx.translate(x, y + Math.sin(t * 5 + e.ph) * 3);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.beginPath();
+  ctx.ellipse(0, 14, 9, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const isHit = e.flash > 0;
+  // Dark Celestial Void Body
+  const pulse = Math.sin(t * 7 + e.ph) * 2;
+  ctx.fillStyle = isHit ? '#ffffff' : '#1e1b4b';
+  ctx.beginPath(); ctx.arc(0, 0, 12 + pulse, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#a855f7'; ctx.lineWidth = 2; ctx.stroke();
+
+  // Swirling Cosmic Aura
+  ctx.fillStyle = '#6366f1';
+  ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#38bdf8';
+  ctx.beginPath(); ctx.arc(Math.cos(t * 4) * 2, Math.sin(t * 4) * 2, 4, 0, Math.PI * 2); ctx.fill();
+
+  // Pulsing Optic Core
+  ctx.fillStyle = '#ef4444';
+  ctx.fillRect(-1.5, -1.5, 3, 3);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-0.5, -0.5, 1, 1);
+
+  // Orbital Energy Shards
+  for (let i = 0; i < 3; i++) {
+    const a = t * 3 + (i * Math.PI * 2 / 3);
+    const ox = Math.cos(a) * 16;
+    const oy = Math.sin(a) * 12;
+    ctx.fillStyle = '#c084fc';
+    ctx.fillRect(ox - 1.5, oy - 1.5, 3, 3);
+  }
+
+  ctx.restore();
+}
+
+function drawEnemy(ctx, e, t) {
+  if (e.type === 'boss') {
+    drawBoss(ctx, e.x, e.y, e, t);
+  } else if (e.type === 'drone') {
+    drawDrone(ctx, e.x, e.y, e, t);
+  } else if (e.type === 'slime') {
+    drawSlime(ctx, e.x, e.y, e, t);
+  } else if (e.type === 'golem') {
+    drawGolem(ctx, e.x, e.y, e, t);
+  } else if (e.type === 'anomaly') {
+    drawAnomaly(ctx, e.x, e.y, e, t);
+  } else {
+    drawDrone(ctx, e.x, e.y, e, t);
+  }
+}
+
 /* ================= 17. World Engine (Hub & 100 Floors) ================= */
 const World = {
   enter(mode) {
@@ -1708,8 +1799,7 @@ const World = {
     Object.assign(this, {
       mode, t: 0, walls: [], ints: [], enemies: [], fx: [], texts: [],
       menu: null, paused: false, pm: null, cleared: false, banner: 0,
-      shake: 0, atkId: 0, dur: 1,
-      inBagScreen: false, bagCursor: 0, bagMovingFrom: -1, bagActionMenu: null
+      shake: 0, atkId: 0, dur: 1
     });
 
     this.pl = {
@@ -1803,16 +1893,16 @@ const World = {
           if (this.walls.some(r => x > r.x - 24 && x < r.x + r.w + 24 && y > r.y - 24 && y < r.y + r.h + 24)) continue;
           if (x > this.stairs.x - 80 && y < 160) continue;
 
-          const boss = type === 'boss', isAnomaly = type === 'anomaly';
+          const boss = type === 'boss', isSlime = type === 'slime', isGolem = type === 'golem', isAnomaly = type === 'anomaly';
           this.enemies.push({
             type, x, y,
-            w: boss ? 36 : (isAnomaly ? 20 : 16),
-            h: boss ? 36 : (isAnomaly ? 20 : 16),
-            hp: boss ? (f === 100 ? 2400 : 160 + f * 14) : (isAnomaly ? 24 + f * 2.5 : 18 + f * 2.2),
+            w: boss ? 36 : (isGolem ? 26 : (isSlime ? 18 : (isAnomaly ? 20 : 16))),
+            h: boss ? 36 : (isGolem ? 26 : (isSlime ? 16 : (isAnomaly ? 20 : 16))),
+            hp: boss ? (f === 100 ? 2400 : 160 + f * 14) : (isGolem ? 40 + f * 3.5 : (isSlime ? 24 + f * 2.5 : (isAnomaly ? 28 + f * 2.8 : 18 + f * 2.2))),
             max: 0,
-            spd: boss ? 60 : (isAnomaly ? 65 : 60 + Math.min(28, f * .4)),
-            dmg: boss ? 16 + f * .5 : (isAnomaly ? 10 + f * .4 : 7 + f * .35),
-            xp: boss ? 45 + f * 3 : (isAnomaly ? 10 + f * 1.2 : 7 + f),
+            spd: boss ? 60 : (isGolem ? 45 : (isSlime ? 65 : (isAnomaly ? 70 : 60 + Math.min(28, f * .4)))),
+            dmg: boss ? 16 + f * .5 : (isGolem ? 12 + f * .45 : (isSlime ? 7 + f * .35 : (isAnomaly ? 10 + f * .4 : 8 + f * .35))),
+            xp: boss ? 45 + f * 3 : (isGolem ? 12 + f : (isSlime ? 7 + f : (isAnomaly ? 10 + f * 1.2 : 8 + f))),
             wt: 0, dx: 0, dy: 0, flash: 0, kbT: 0, kx: 0, ky: 0, last: 0,
             ph: Math.random() * 6
           });
@@ -1825,7 +1915,13 @@ const World = {
       };
 
       for (let i = 0; i < count; i++) {
-        spawn(i % 3 === 2 ? 'anomaly' : 'drone');
+        let t = 'slime';
+        const r = (i + f) % 4;
+        if (r === 0) t = 'drone';
+        else if (r === 1) t = 'slime';
+        else if (r === 2) t = 'anomaly';
+        else t = (f >= 2 ? 'golem' : 'drone');
+        spawn(t);
       }
 
       if (isBoss) spawn('boss');
@@ -1845,13 +1941,6 @@ const World = {
       if (!p.flags[k]) {
         p.flags[k] = true;
         p.inv.potions++;
-        // Add potion to bag slot
-        let potSlot = p.bag.find(it => it && it.id === 'potion');
-        if (potSlot) { potSlot.count++; }
-        else {
-          let emptyIdx = p.bag.indexOf(null);
-          if (emptyIdx >= 0) p.bag[emptyIdx] = { id: 'potion', name: 'Field Potion', count: 1, icon: '🧪' };
-        }
         toast('★ +1 Field Potion from ' + c.name);
         beep(880, .1);
       }
@@ -1862,7 +1951,7 @@ const World = {
     const p = G.p, b = p.bounty;
     if (b.have >= b.need) {
       Dlg.say('Bounty Notice Board', '#facc15', [
-        'Guild Bounty Complete! ' + b.need + ' Spire drones & anomalies neutralized.',
+        'Guild Bounty Complete! ' + b.need + ' Spire drones & slimes neutralized.',
         'The Zodiac brokers deliver 75 Elemental Shards and 35 EXP into your pouch!'
       ], 'merchant', () => {
         p.inv.shards += 75;
@@ -1904,27 +1993,27 @@ const World = {
         fn: () => {
           p.inv.shards -= 30;
           p.inv.potions++;
-        // Add potion to bag slot
-        let potSlot = p.bag.find(it => it && it.id === 'potion');
-        if (potSlot) { potSlot.count++; }
-        else {
-          let emptyIdx = p.bag.indexOf(null);
-          if (emptyIdx >= 0) p.bag[emptyIdx] = { id: 'potion', name: 'Field Potion', count: 1, icon: '🧪' };
-        }
-          toast('★ Potion Purchased!');
+          let potSlot = p.bag.find(it => it && it.id === 'potion');
+          if (potSlot) { potSlot.count++; }
+          else {
+            let emptyIdx = p.bag.indexOf(null);
+            if (emptyIdx >= 0) p.bag[emptyIdx] = { id: 'potion', name: 'Field Potion', count: 1, icon: '🧪' };
+          }
+          toast('★ Potion added to Bag!');
           autosave();
         }
       },
       {
-        label: () => `Expand Bag Pouch (+9 Slots) [60 shards]`,
-        sub: () => `Current: ${p.bagCapacity || 9} slots (Max 27)`,
-        enabled: () => (p.bagCapacity || 9) < 27 && p.inv.shards >= 60,
+        label: () => p.bagCapacity >= 27 ? '★ Maximum Bag Capacity (27 Slots)' : `Expand Bag Pouch (+9 Slots) [${p.bagCapacity === 9 ? 60 : 120} shards]`,
+        sub: () => p.bagCapacity >= 27 ? 'Your Stardew backpack is fully expanded!' : `Expands bag storage (${p.bagCapacity} -> ${p.bagCapacity + 9} slots)`,
+        enabled: () => p.bagCapacity < 27 && p.inv.shards >= (p.bagCapacity === 9 ? 60 : 120),
         fn: () => {
-          p.inv.shards -= 60;
-          p.bagCapacity = (p.bagCapacity || 9) + 9;
-          while (p.bag.length < p.bagCapacity) p.bag.push(null);
+          const cost = p.bagCapacity === 9 ? 60 : 120;
+          p.inv.shards -= cost;
+          p.bagCapacity += 9;
+          for (let i = 0; i < 9; i++) p.bag.push(null);
           toast(`★ Bag Expanded to ${p.bagCapacity} Slots!`);
-          beep(960, .2, 'triangle', .08);
+          beep(1040, .25, 'triangle', .1);
           autosave();
         }
       },
@@ -1994,17 +2083,6 @@ const World = {
     }
   },
 
-  usePotion() {
-    const p = G.p, st = sx(p);
-    const healVal = p.element === 'Water' ? 90 : 65;
-    if (p.inv.potions > 0 && p.hp < st.maxHp) {
-      p.inv.potions--;
-      p.hp = Math.min(st.maxHp, p.hp + healVal);
-      toast('+' + healVal + ' HP Restored');
-      beep(900, .14, 'sine', .05);
-    } else toast(p.inv.potions ? 'HP already full' : 'No potions in pouch');
-  },
-
   getBagItemCount() {
     const p = G.p;
     if (!p || !p.bag) return 0;
@@ -2052,12 +2130,23 @@ const World = {
   pauseMenu() {
     const self = this, p = G.p;
     return Menu([
-      { label: 'Resume Expedition', fn: () => { self.paused = false; self.closeBagScreen(); } },
-      { label: () => `Bag / Inventory (${self.getBagItemCount()}/${p.bagCapacity || 9})`, fn: () => self.openBagScreen() },
-      { label: () => `Music: ${AudioSys.musicOn ? 'ON' : 'OFF'}`, fn: () => AudioSys.toggleMusic() },
-      { label: 'Save Game', fn: () => autosave() },
-      { label: 'Return to Title', fn: () => { autosave(); go(Title); } }
-    ], 280, 120, 240, 36);
+      { label: 'Resume Expedition', fn: () => { self.paused = false; } },
+      {
+        label: () => `🎒 Bag / Inventory (${self.getBagItemCount()}/${p.bagCapacity})`,
+        sub: () => 'Open Stardew-style Backpack: Arrange slots & drink potions',
+        fn: () => { self.openBagScreen(); }
+      },
+      {
+        label: () => AudioSys.musicOn ? 'Music: ON' : 'Music: OFF',
+        sub: () => 'Toggle 16-Bit Chiptune Soundtrack (Hotkey: M)',
+        fn: () => {
+          AudioSys.toggleMusic();
+          beep(660, .05);
+        }
+      },
+      { label: 'Save Game', fn: () => { autosave(); beep(700, .1); } },
+      { label: 'Return to Title', fn: () => { self.paused = false; go(Title); } }
+    ], W / 2 - 190, 110, 380, 48);
   },
 
   nearest() {
@@ -2431,6 +2520,47 @@ const World = {
     }
 
     const p = G.p, st = sx(p), pl = this.pl, W2 = this.W, H2 = this.H;
+
+    // Hotbar number key selection (1-9) & Bag Toggle (B / E)
+    for (let i = 1; i <= 9; i++) {
+      if (Input.just('num' + i)) {
+        p.selectedSlot = i - 1;
+        beep(600 + i * 25, .04);
+      }
+    }
+    if (Input.just('bag')) {
+      this.paused = true;
+      this.openBagScreen();
+      return;
+    }
+
+    // Touch / Mouse Tap on Stardew Hotbar or Bag Button
+    if (Input.tap && !Dlg.active && !this.menu) {
+      const startX = 231, startY = 402, sw = 34, gap = 4;
+      // Check 🎒 Bag Button at x: 576, y: 402, w: 38, h: 38
+      if (Input.tap.x >= 576 && Input.tap.x <= 614 && Input.tap.y >= 402 && Input.tap.y <= 440) {
+        this.paused = true;
+        this.openBagScreen();
+        Input.tap = null;
+        return;
+      }
+      // Check 9 Hotbar Slots
+      for (let i = 0; i < 9; i++) {
+        const sx = startX + i * (sw + gap);
+        const sy = startY;
+        if (Input.tap.x >= sx && Input.tap.x <= sx + sw && Input.tap.y >= sy && Input.tap.y <= sy + 38) {
+          if (p.selectedSlot === i) {
+            // Tapped active slot: Drink/Use potion if present!
+            this.drinkPotionFromSlot(i);
+          } else {
+            p.selectedSlot = i;
+            beep(650, .04);
+          }
+          Input.tap = null;
+          break;
+        }
+      }
+    }
     const mv = Input.move(), near = this.nearest(), mm = Math.hypot(mv.x, mv.y);
 
     pl.moving = mm > 0.05;
@@ -2770,11 +2900,9 @@ const World = {
       draw: () => {
         const isBlinking = pl.inv > 0 && Math.floor(this.t * 20) % 2 === 0;
         if (!isBlinking) {
-          drawChar(pl.x, pl.y, {
-            outfit: OUTFITS[p.outfit], hair: HAIRS[p.hair], elc: el.color,
-            fx: pl.fx, fy: pl.fy, moving: pl.moving,
-            atkT: pl.atkT, combo: pl.combo
-          }, this.t, 1.25);
+          drawChibiHero(ctx, pl.x, pl.y, {
+            guild: p.guild, element: p.element, outfit: OUTFITS[p.outfit], hair: HAIRS[p.hair], hairStyle: p.hairStyle || 0
+          }, this.t, pl.facing, pl.moving, 1.0, pl.atkT, 0.3);
         }
 
         // Sword Slash Arc Effect on attack
@@ -2799,11 +2927,13 @@ const World = {
         drawables.push({
           y: c.y,
           draw: () => {
-            drawChar(c.x, c.y, {
+            drawChibiHero(ctx, c.x, c.y, {
+              guild: c.name === 'Yuna' ? 'Aries' : (c.name === 'Yuri' ? 'Taurus' : (c.name === 'Yumi' ? 'Gemini' : 'Cancer')),
+              element: c.el,
               outfit: c.name === 'Yuna' ? '#e11d48' : (c.name === 'Yuri' ? '#65a30d' : (c.name === 'Yumi' ? '#0891b2' : '#2563eb')),
               hair: c.name === 'Yuna' ? '#dc2626' : (c.name === 'Yuri' ? '#4d7c0f' : (c.name === 'Yumi' ? '#0891b2' : '#60a5fa')),
-              elc: ELEM[c.el].color, fx: 0, fy: 1, moving: false
-            }, this.t, 1.25);
+              hairStyle: c.name === 'Yuna' ? 1 : (c.name === 'Yuri' ? 4 : (c.name === 'Yumi' ? 2 : 0))
+            }, this.t, 'down', false);
 
             T(c.name, c.x, c.y - 32, 11, ELEM[c.el].color, 'center');
             // Floating Inotia-style animated speech bubble
@@ -2820,7 +2950,10 @@ const World = {
       drawables.push({
         y: e.y,
         draw: () => {
-          drawEnemy(ctx, e, this.t);
+          if (e.type === 'boss') drawBoss(ctx, e.x, e.y, e, this.t);
+          else if (e.type === 'golem') drawGolem(ctx, e.x, e.y, e, this.t);
+          else if (e.type === 'drone') drawDrone(ctx, e.x, e.y, e, this.t);
+          else drawSlime(ctx, e.x, e.y, e, this.t);
 
           // Enemy HP bar
           if (e.hp < e.max && e.type !== 'boss') {
@@ -2984,6 +3117,11 @@ const World = {
       T('Press K or Click Leave Counter to Exit', 150, 400, 12, '#93c5fd');
     }
 
+    // 4. Stardew Valley On-Screen Inventory Hotbar
+    if (!this.paused && !Dlg.active && !this.menu) {
+      this.drawStardewHotbar();
+    }
+
     if (this.paused) {
       ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
       ctx.fillRect(0, 0, W, H);
@@ -2997,10 +3135,75 @@ const World = {
 
     if (Dlg.active) Dlg.draw();
   },
+
+  drawStardewHotbar() {
+    const p = G.p;
+    if (!p || !p.bag) return;
+    const startX = 231, startY = 402, sw = 34, sh = 38, gap = 4;
+    const totalW = 9 * sw + 8 * gap;
+
+    // Rustic Wood & Slate Stardew Toolbar Plate
+    ctx.fillStyle = '#1c1917';
+    ctx.fillRect(startX - 6, startY - 4, totalW + 12 + 46, sh + 8);
+    ctx.strokeStyle = '#78350f'; ctx.lineWidth = 2.5;
+    ctx.strokeRect(startX - 6.5, startY - 4.5, totalW + 12 + 46, sh + 8);
+    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 1;
+    ctx.strokeRect(startX - 4.5, startY - 2.5, totalW + 8 + 46, sh + 4);
+
+    // Selected Slot Item Label Banner above Hotbar
+    const selItem = p.bag[p.selectedSlot];
+    if (selItem) {
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+      ctx.fillRect(280, startY - 22, 240, 18);
+      ctx.strokeStyle = '#facc15'; ctx.lineWidth = 1;
+      ctx.strokeRect(280.5, startY - 21.5, 239, 17);
+      T(`${selItem.icon} ${selItem.name} (x${selItem.count}) • [Click to Drink]`, 400, startY - 18, 10, '#fde047', 'center');
+    } else {
+      T(`[${p.selectedSlot + 1}] Empty Slot`, 400, startY - 16, 9, '#94a3b8', 'center');
+    }
+
+    // 9 Slots
+    for (let i = 0; i < 9; i++) {
+      const sx = startX + i * (sw + gap);
+      const isSel = p.selectedSlot === i;
+
+      // Slot Background
+      ctx.fillStyle = isSel ? '#451a03' : '#292524';
+      ctx.fillRect(sx, startY, sw, sh);
+      ctx.strokeStyle = isSel ? '#fde047' : '#57534e';
+      ctx.lineWidth = isSel ? 2 : 1;
+      ctx.strokeRect(sx + 0.5, startY + 0.5, sw - 1, sh - 1);
+
+      if (isSel) {
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.18)';
+        ctx.fillRect(sx + 2, startY + 2, sw - 4, sh - 4);
+      }
+
+      // Slot Number (1 to 9)
+      T(String(i + 1), sx + 3, startY + 2, 8, isSel ? '#fde047' : '#a8a29e', 'left');
+
+      // Item Content
+      const it = p.bag[i];
+      if (it) {
+        T(it.icon || '🧪', sx + sw / 2, startY + 18, 16, '#ffffff', 'center');
+        if (it.count > 1) {
+          T(String(it.count), sx + sw - 3, startY + 28, 9, '#ffffff', 'right');
+        }
+      }
+    }
+
+    // 🎒 Backpack Button (Opens Full Stardew Bag)
+    const bx = startX + totalW + 8, by = startY;
+    ctx.fillStyle = '#451a03'; ctx.fillRect(bx, by, 34, sh);
+    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 1.5; ctx.strokeRect(bx + 0.5, by + 0.5, 33, sh - 1);
+    T('🎒', bx + 17, by + 18, 16, '#ffffff', 'center');
+    T(`${this.getBagItemCount()}/${p.bagCapacity}`, bx + 17, by + 30, 8, '#fde047', 'center');
+  },
+
   updateBagScreen() {
     const p = G.p;
     const totalSlots = p.bagCapacity || 9;
-    const cols = 3;
+    const cols = 9;
 
     if (this.bagActionMenu) {
       menuStep(this.bagActionMenu);
@@ -3011,7 +3214,7 @@ const World = {
       return;
     }
 
-    if (Input.just('k') || Input.just('p')) {
+    if (Input.just('k') || Input.just('p') || Input.just('bag')) {
       if (this.bagMovingFrom >= 0) {
         this.bagMovingFrom = -1;
         toast('Move cancelled');
@@ -3040,9 +3243,9 @@ const World = {
     }
 
     if (Input.tap) {
-      const startX = 175, startY = 130, sw = 64, gap = 8;
+      const startX = 140, startY = 120, sw = 52, gap = 6;
       for (let i = 0; i < totalSlots; i++) {
-        const c = i % 3, r = Math.floor(i / 3);
+        const c = i % 9, r = Math.floor(i / 9);
         const sx = startX + c * (sw + gap);
         const sy = startY + r * (sw + gap);
         if (Input.tap.x >= sx && Input.tap.x <= sx + sw && Input.tap.y >= sy && Input.tap.y <= sy + sw) {
@@ -3101,7 +3304,7 @@ const World = {
           label: 'Cancel',
           fn: () => { self.bagActionMenu = null; }
         }
-      ], 420, 140, 220, 36);
+      ], 420, 160, 220, 36);
     } else {
       toast('Empty Slot. Press [K] to return.');
       beep(360, .04);
@@ -3112,85 +3315,79 @@ const World = {
     const p = G.p, st = sx(p);
     const totalSlots = p.bagCapacity || 9;
 
-    // GBA Slate-Blue & Gold Filigree Inventory Box
-    const bx = 130, by = 60, bw = 540, bh = 340;
-    ctx.fillStyle = '#0f172a'; ctx.fillRect(bx, by, bw, bh);
-    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2.5; ctx.strokeRect(bx + 1, by + 1, bw - 2, bh - 2);
-    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 1; ctx.strokeRect(bx + 4, by + 4, bw - 8, bh - 8);
+    // Stardew Valley Rustic Wood & Gold Filigree Inventory Box
+    const bx = 110, by = 50, bw = 580, bh = 350;
+    ctx.fillStyle = '#1c1917'; ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = '#78350f'; ctx.lineWidth = 3; ctx.strokeRect(bx + 1.5, by + 1.5, bw - 3, bh - 3);
+    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 1.5; ctx.strokeRect(bx + 5.5, by + 5.5, bw - 11, bh - 11);
 
-    // Title Header
-    ctx.fillStyle = '#1e293b'; ctx.fillRect(bx + 10, by + 10, bw - 20, 34);
-    ctx.strokeStyle = '#facc15'; ctx.strokeRect(bx + 10.5, by + 10.5, bw - 21, 33);
-    T(`🎒 TRAVELER'S BAG [ ${totalSlots} SLOTS ]`, bx + 24, by + 18, 15, '#fde047');
-    T(`Shards: 💎 ${p.inv.shards} | HP: ${Math.ceil(p.hp)}/${st.maxHp}`, bx + bw - 210, by + 19, 12, '#38bdf8');
+    // Header Banner
+    ctx.fillStyle = '#292524'; ctx.fillRect(bx + 6, by + 6, bw - 12, 38);
+    T("🎒 ADVENTURER'S BACKPACK • STARDEW POUCH", bx + 20, by + 16, 14, '#fde047');
+    T(`Storage Capacity: ${this.getBagItemCount()} / ${totalSlots} Slots`, bx + bw - 20, by + 18, 11, '#38bdf8', 'right');
 
-    // Draw 3x3 Grid (or 6x3 if expanded)
-    const startX = 160, startY = 120, sw = 64, gap = 8;
-    for (let i = 0; i < totalSlots; i++) {
-      const c = i % 3, r = Math.floor(i / 3);
-      const sx = startX + c * (sw + gap);
-      const sy = startY + r * (sw + gap);
-      const isSel = (this.bagCursor === i);
-      const isMoving = (this.bagMovingFrom === i);
-      const item = p.bag[i];
+    // 3 Rows of 9 Slots (Stardew Valley Grid)
+    const startX = 140, startY = 110, sw = 52, gap = 6;
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 9; c++) {
+        const slotIdx = r * 9 + c;
+        const sx = startX + c * (sw + gap);
+        const sy = startY + r * (sw + gap);
+        const isUnlocked = slotIdx < totalSlots;
+        const isHover = this.bagCursor === slotIdx;
+        const isMoving = this.bagMovingFrom === slotIdx;
 
-      // Slot Background
-      ctx.fillStyle = isMoving ? 'rgba(56,189,248,.35)' : (isSel ? 'rgba(250,204,21,.3)' : '#1e293b');
-      ctx.fillRect(sx, sy, sw, sw);
-      ctx.strokeStyle = isMoving ? '#38bdf8' : (isSel ? '#facc15' : '#475569');
-      ctx.lineWidth = (isSel || isMoving) ? 2.5 : 1;
-      ctx.strokeRect(sx + 0.5, sy + 0.5, sw - 1, sw - 1);
+        if (isUnlocked) {
+          ctx.fillStyle = isHover ? '#451a03' : '#292524';
+          ctx.fillRect(sx, sy, sw, sw);
+          ctx.strokeStyle = isMoving ? '#22c55e' : (isHover ? '#fde047' : '#57534e');
+          ctx.lineWidth = isHover || isMoving ? 2.5 : 1;
+          ctx.strokeRect(sx + 0.5, sy + 0.5, sw - 1, sw - 1);
 
-      // Slot Number in corner
-      T(String(i + 1), sx + 4, sy + 3, 10, isSel ? '#fde047' : '#94a3b8');
+          if (isHover) {
+            ctx.fillStyle = 'rgba(250, 204, 21, 0.2)';
+            ctx.fillRect(sx + 2, sy + 2, sw - 4, sw - 4);
+          }
 
-      // Item icon & count
-      if (item) {
-        ctx.font = '22px sans-serif';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(item.icon || '📦', sx + sw / 2, sy + sw / 2 - 2);
-        T(`x${item.count}`, sx + sw - 6, sy + sw - 14, 11, '#ffffff', 'right');
-      } else {
-        T('Empty', sx + sw / 2, sy + sw / 2 - 4, 10, '#64748b', 'center');
-      }
+          // Slot Index
+          T(String(slotIdx + 1), sx + 4, sy + 3, 9, isHover ? '#fde047' : '#a8a29e', 'left');
 
-      if (isMoving) {
-        T('MOVE', sx + sw / 2, sy + sw - 12, 9, '#38bdf8', 'center');
+          // Item Icon & Stack Count
+          const it = p.bag[slotIdx];
+          if (it) {
+            T(it.icon || '🧪', sx + sw / 2, sy + 28, 22, '#ffffff', 'center');
+            T('x' + it.count, sx + sw - 4, sy + sw - 4, 10, '#ffffff', 'right');
+          }
+        } else {
+          // Locked Slot (Tier 2 / 3 Upgrade Required)
+          ctx.fillStyle = '#1c1917';
+          ctx.fillRect(sx, sy, sw, sw);
+          ctx.strokeStyle = '#292524'; ctx.lineWidth = 1;
+          ctx.strokeRect(sx + 0.5, sy + 0.5, sw - 1, sw - 1);
+          T('🔒', sx + sw / 2, sy + 28, 14, '#57534e', 'center');
+        }
       }
     }
 
-    // Selected Item Detail Card (Right side)
-    const curItem = p.bag[this.bagCursor];
-    const dx = 390, dy = 120, dw = 250, dh = 180;
-    panel(dx, dy, dw, dh, curItem ? '#38bdf8' : '#64748b');
+    // Detail Panel at Bottom
+    const dw = bw - 40, dh = 50, dx = bx + 20, dy = by + bh - 68;
+    ctx.fillStyle = '#292524'; ctx.fillRect(dx, dy, dw, dh);
+    ctx.strokeStyle = '#44403c'; ctx.lineWidth = 1; ctx.strokeRect(dx + 0.5, dy + 0.5, dw - 1, dh - 1);
 
-    if (curItem) {
-      ctx.font = '28px sans-serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(curItem.icon || '📦', dx + 32, dy + 32);
-      T(curItem.name, dx + 65, dy + 18, 14, '#fde047');
-      T(`Quantity: ${curItem.count}`, dx + 65, dy + 36, 11, '#38bdf8');
-
-      const desc = curItem.id === 'potion' ?
-        'Restores 60 HP immediately upon drinking. Can be used anytime from the Bag menu during your expedition.' :
-        'Scavenged Spire artifact.';
-      wrap(desc, dw - 24, 11).forEach((l, idx) => T(l, dx + 12, dy + 66 + idx * 16, 11, '#cbd5e1', 'left', false));
-
-      T('▶ Press [J] to Drink / Arrange', dx + 12, dy + dh - 26, 11, '#22c55e');
+    const activeItem = p.bag[this.bagCursor];
+    if (activeItem) {
+      T(`${activeItem.icon} ${activeItem.name} (x${activeItem.count})`, dx + 12, dy + 10, 12, '#fde047');
+      T('Emergency alchemical field tonic. Restores 60 HP (+90 for Water affinity). Press [J] to drink or arrange.', dx + 12, dy + 28, 10, '#cbd5e1', 'left', false);
     } else {
-      T('EMPTY POUCH COMPARTMENT', dx + dw / 2, dy + 35, 11, '#94a3b8', 'center');
-      T('Buy Bag Upgrades in Safe Havens to expand storage capacity.', dx + dw / 2, dy + 65, 10, '#64748b', 'center', false);
+      T(`Slot ${this.bagCursor + 1}: Empty Compartment`, dx + 12, dy + 10, 11, '#94a3b8');
+      T('Expand your backpack pouch at the Safe Haven Merchant for additional rows.', dx + 12, dy + 28, 10, '#64748b', 'left', false);
     }
-
-    // Bottom Help Banner
-    T('WASD / Arrows: Navigate Slots | J: Select / Move | K: Return to Pause Menu', bx + bw / 2, by + bh - 24, 11, '#94a3b8', 'center');
 
     // Sub-Action Menu if active
     if (this.bagActionMenu) {
       menuDraw(this.bagActionMenu);
     }
   },
-
 };
 
 function panel(x, y, w, h, col = '#facc15') {
