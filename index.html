@@ -3,234 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#05060d">
-<title>Astral Spire: Climb to Floor 100</title>
-<meta name="description" content="An action RPG dungeon crawler. Climb to Floor 100 of the Astral Spire with Zodiac Guilds, procedural music, elemental combos, and dark steel biomes.">
-<meta property="og:title" content="Astral Spire: Climb to Floor 100">
-<meta property="og:description" content="An action RPG dungeon crawler. Climb to Floor 100 of the Astral Spire with Zodiac Guilds, procedural music, elemental combos, and dark steel biomes.">
+<meta name="theme-color" content="#08090f">
+<title>Astral Spire: GBA / Inotia Pixel Action-RPG</title>
 <link rel="stylesheet" href="style.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=M+PLUS+Rounded+1c:wght@500;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 <div id="wrap">
-  <div id="game-stage">
+  <div id="gba-bezel">
     <canvas id="game" width="800" height="450"></canvas>
-
-    <!-- Real Action-RPG Dynamic Health & Stamina HUD Overlay -->
-    <div id="rpg-hud" class="rpg-hud hidden">
-      <!-- Crest Orb & Level Badge -->
-      <div class="hud-crest-box">
-        <div class="hud-crest-ring" id="hudCrestRing">
-          <div class="hud-crest-glow" id="hudCrestGlow"></div>
-          <div class="hud-zodiac-glyph" id="hudZodiacGlyph">♈</div>
-          <div class="hud-level-badge"><span class="lvl-txt">LV</span><span id="hudLevelNum">1</span></div>
-        </div>
-      </div>
-
-      <!-- Identity & Bars Stack -->
-      <div class="hud-main-panel">
-        <!-- Player Identity & Elemental Advantage Banner -->
-        <div class="hud-identity-row">
-          <span class="hud-player-name" id="hudPlayerName">CLIMBER</span>
-          <span class="hud-guild-badge" id="hudGuildBadge">ARIES</span>
-          <span class="hud-affinity-pill" id="hudAffinityPill"><span id="hudAffinityIcon">🔥</span> <span id="hudAffinityText">Fire • +50% vs 🌪️</span></span>
-        </div>
-
-        <!-- HEALTH BAR (HP) -->
-        <div class="hud-bar-container hp-container">
-          <div class="hud-bar-trough">
-            <div class="hud-bar-lag" id="hudHpLag"></div>
-            <div class="hud-bar-fill hp-fill" id="hudHpFill">
-              <div class="hud-bar-highlight"></div>
-            </div>
-          </div>
-          <div class="hud-bar-info">
-            <span class="hud-bar-tag hp-tag">HP</span>
-            <span class="hud-bar-nums"><strong id="hudHpVal">100</strong> / <span id="hudHpMax">100</span></span>
-          </div>
-        </div>
-
-        <!-- STAMINA BAR (STA) -->
-        <div class="hud-bar-container sta-container">
-          <div class="hud-bar-trough">
-            <div class="hud-bar-fill sta-fill" id="hudStaFill">
-              <div class="hud-bar-highlight"></div>
-            </div>
-          </div>
-          <div class="hud-bar-info">
-            <span class="hud-bar-tag sta-tag">STA</span>
-            <span class="hud-bar-nums"><strong id="hudStaVal">50</strong> / <span id="hudStaMax">50</span></span>
-          </div>
-        </div>
-
-        <!-- STARLIGHT EXP PROGRESSION BAR -->
-        <div class="hud-bar-container exp-container">
-          <div class="hud-bar-trough">
-            <div class="hud-bar-fill exp-fill" id="hudExpFill"></div>
-          </div>
-          <div class="hud-bar-info">
-            <span class="hud-bar-tag exp-tag">EXP</span>
-            <span class="hud-bar-nums"><span id="hudExpVal">0</span> / <span id="hudExpMax">35</span></span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Skill & Ultimate Status Orbs -->
-      <div class="hud-skill-rack">
-        <div class="hud-skill-slot" id="hudSkillSlot" title="Guild Skill (L)">
-          <div class="hud-skill-sweep" id="hudSkillSweep"></div>
-          <span class="hud-slot-key">L</span>
-          <span class="hud-slot-icon" id="hudSkillIcon">⚔️</span>
-        </div>
-        <div class="hud-skill-slot ult-slot" id="hudUltSlot" title="Ultimate (Hold L)">
-          <div class="hud-skill-sweep" id="hudUltSweep"></div>
-          <span class="hud-slot-key">ULT</span>
-          <span class="hud-slot-icon" id="hudUltIcon">⚡</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Safe Haven Complete Town Hub UI Overlay -->
-    <div id="haven-ui" class="haven-ui hidden">
-      <!-- Haven Top Header -->
-      <div class="haven-top-banner">
-        <div class="haven-badge-group">
-          <span class="haven-neon-tag">SAFE HAVEN</span>
-          <span class="haven-checkpoint-title" id="havenCheckpointTitle">OUTPOST 15</span>
-        </div>
-        <div class="haven-status-group">
-          <div class="haven-currency-badge">
-            <span class="curr-icon">💎</span>
-            <span class="curr-label">GOLD</span>
-            <strong id="havenGoldVal">0</strong>
-          </div>
-          <button class="haven-toggle-btn" id="btnHavenToggleView" title="Toggle Town Hub overlay to view room">👁️ VIEW ROOM</button>
-        </div>
-      </div>
-
-      <!-- Haven Subtitle & Lore -->
-      <div class="haven-sub-banner" id="havenSubBanner">
-        Combat paused. Sanctuary established. Prepare for the next 15 floors.
-      </div>
-
-      <!-- 4 Core Town Facilities (Rest, Buy Equipment, Sell Loot, Portals) -->
-      <div class="haven-facilities-grid">
-        <!-- 1. REST (Red Neon Sign) -->
-        <button class="facility-card facility-rest" id="btnHavenRest" title="Rest at the Safe Station">
-          <div class="facility-neon-strip neon-red">REST</div>
-          <div class="facility-glyph">🛌</div>
-          <div class="facility-details">
-            <span class="facility-name">REST STATION</span>
-            <span class="facility-desc">Fully restore HP & Stamina</span>
-            <span class="facility-status" id="havenRestStatus">Ready</span>
-          </div>
-        </button>
-
-        <!-- 2. BUY EQUIPMENT (Cyan Neon Sign) -->
-        <button class="facility-card facility-buy" id="btnHavenBuy" title="Buy Equipment Upgrades">
-          <div class="facility-neon-strip neon-cyan">HUB FORGE</div>
-          <div class="facility-glyph">⚔️</div>
-          <div class="facility-details">
-            <span class="facility-name">BUY EQUIPMENT</span>
-            <span class="facility-desc">Upgrade weapons & nano-armor</span>
-            <span class="facility-status">Shop Open</span>
-          </div>
-        </button>
-
-        <!-- 3. SELL LOOT (Pink Neon Sign) -->
-        <button class="facility-card facility-sell" id="btnHavenSell" title="Sell Monster Loot">
-          <div class="facility-neon-strip neon-pink">RECYCLER</div>
-          <div class="facility-glyph">💰</div>
-          <div class="facility-details">
-            <span class="facility-name">SELL LOOT</span>
-            <span class="facility-desc">Exchange monster drops for Gold</span>
-            <span class="facility-status" id="havenSellStatus">Loot Ready</span>
-          </div>
-        </button>
-
-        <!-- 4. PORTALS (Purple Neon Sign) -->
-        <button class="facility-card facility-portal" id="btnHavenPortal" title="Starlight Warp Portal">
-          <div class="facility-neon-strip neon-purple">PORTAL</div>
-          <div class="facility-glyph">🌀</div>
-          <div class="facility-details">
-            <span class="facility-name">WARP PORTAL</span>
-            <span class="facility-desc">Transport to explored floors</span>
-            <span class="facility-status" id="havenPortalStatus">Explored Levels</span>
-          </div>
-        </button>
-      </div>
-
-      <!-- Action Footer: Proceed to Next 15 Floors -->
-      <div class="haven-bottom-bar">
-        <button class="haven-proceed-btn" id="btnHavenProceed">
-          <div class="proceed-icon">▶</div>
-          <div class="proceed-text">
-            <strong>ENTER FLOOR <span id="havenNextFloorDisplay">16</span></strong>
-            <small>Resume climbing the next 15 floors</small>
-          </div>
-        </button>
-      </div>
-    </div>
-
-    <!-- Modals inside Haven -->
-    <!-- 1. BUY EQUIPMENT MODAL -->
-    <div id="modal-haven-buy" class="haven-modal hidden">
-      <div class="modal-card">
-        <div class="modal-header">
-          <div class="modal-title-box">
-            <span class="modal-tag neon-cyan">HUB ARMORY</span>
-            <h3>BUY EQUIPMENT & UPGRADES</h3>
-          </div>
-          <button class="modal-close-btn" id="btnCloseHavenBuy">✕</button>
-        </div>
-        <div class="modal-body shop-list" id="havenShopList"></div>
-      </div>
-    </div>
-
-    <!-- 2. SELL LOOT MODAL -->
-    <div id="modal-haven-sell" class="haven-modal hidden">
-      <div class="modal-card">
-        <div class="modal-header">
-          <div class="modal-title-box">
-            <span class="modal-tag neon-pink">SCAVENGER RECYCLER</span>
-            <h3>SELL MONSTER DROPS & LOOT</h3>
-          </div>
-          <button class="modal-close-btn" id="btnCloseHavenSell">✕</button>
-        </div>
-        <div class="modal-body" id="havenSellList"></div>
-      </div>
-    </div>
-
-    <!-- 3. WARP PORTAL MODAL -->
-    <div id="modal-haven-portal" class="haven-modal hidden">
-      <div class="modal-card">
-        <div class="modal-header">
-          <div class="modal-title-box">
-            <span class="modal-tag neon-purple">STARLIGHT PORTAL</span>
-            <h3>WARP TO EXPLORED LEVEL</h3>
-          </div>
-          <button class="modal-close-btn" id="btnCloseHavenPortal">✕</button>
-        </div>
-        <div class="modal-body" id="havenPortalBody"></div>
-      </div>
-    </div>
   </div>
 </div>
 
 <div id="touch">
   <div id="joy"><div id="knob"></div></div>
-  <div id="bK" class="btn" title="Attack (K)"><span class="b-key">K</span><span class="b-tag">ATK</span></div>
-  <div id="bD" class="btn" title="Dodge Dash (D)"><span class="b-key">D</span><span class="b-tag">DASH</span></div>
-  <div id="bL" class="btn" title="Guild Skill / Ultimate (L)"><span class="b-key">L</span><span class="b-tag">SKILL</span></div>
-  <div id="bJ" class="btn" title="Interact / Sprint (J)"><span class="b-key">J</span><span class="b-tag">ACT</span></div>
-  <div id="bMusic" class="btn" title="Toggle Music">🎵</div>
-  <div id="bBag" class="btn" title="Open Bag (B)">🎒</div>
-  <div id="bP" class="btn" title="Pause Menu">II</div>
+  <div id="bK" class="gba-btn" title="Attack (K / B)">K</div>
+  <div id="bD" class="gba-btn" title="Dodge Roll (D / R)">D</div>
+  <div id="bL" class="gba-btn" title="Skill / Ult (L)">L</div>
+  <div id="bJ" class="gba-btn" title="Interact / Sprint (J / A)">J</div>
+  <div id="bMusic" class="gba-btn" title="Toggle Music">🎵</div>
+  <div id="bP" class="gba-btn" title="Pause / Menu">II</div>
 </div>
 
-<div id="rotate">Rotate your device to landscape<br>to enter the Astral Spire.</div>
+<div id="rotate">Rotate your device to landscape<br>for the full GBA / Inotia RPG experience!</div>
 <input type="file" id="imp" accept=".json,application/json" style="display:none">
 
 <script src="game.js"></script>
