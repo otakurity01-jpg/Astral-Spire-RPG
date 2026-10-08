@@ -25,10 +25,38 @@ function mulberry(a) {
 
 /* ================= 2. Game Data & Guilds ================= */
 const ELEM = {
-  Fire:  { color: '#ef4444', cls: 'Pyromancer Vanguard',  hp: 100, sta: 50, atk: 15, spd: 105, perk: 'Deals highest flame damage & burns foes' },
-  Earth: { color: '#84cc16', cls: 'Geomancer Guardian',   hp: 140, sta: 45, atk: 11, spd: 90,  perk: 'Takes 25% less damage, heavy kinetic poise' },
-  Air:   { color: '#06b6d4', cls: 'Aeromancer Rogue',     hp: 90,  sta: 70, atk: 11, spd: 125, perk: 'Fastest movement speed & +15% Crit chance' },
-  Water: { color: '#3b82f6', cls: 'Hydromancer Healer',   hp: 105, sta: 60, atk: 10, spd: 100, perk: 'Heals 5 HP on kill, +50% Potion potency' }
+  Fire: {
+    color: '#ef4444',
+    cls: 'Pyromancer Vanguard',
+    weaponName: 'Blazing Techno-Staff',
+    weaponType: 'fire_staff',
+    potion: { id: 'flame_elixir', name: 'Flame Elixir', icon: '🔥', heal: 70, desc: '+70 HP & Flame Aura (+6 ATK for 15s)' },
+    hp: 100, sta: 50, atk: 15, spd: 105, perk: 'Deals highest flame damage & burns foes'
+  },
+  Earth: {
+    color: '#84cc16',
+    cls: 'Geomancer Guardian',
+    weaponName: 'Terra Bastion Hammer',
+    weaponType: 'earth_hammer',
+    potion: { id: 'terra_elixir', name: 'Terra Elixir', icon: '🛡️', heal: 65, desc: '+65 HP & Stone Barrier (Absorbs 35 DMG)' },
+    hp: 140, sta: 45, atk: 11, spd: 90, perk: 'Takes 25% less damage, heavy kinetic poise'
+  },
+  Air: {
+    color: '#06b6d4',
+    cls: 'Aeromancer Rogue',
+    weaponName: 'Twin Neon Daggers',
+    weaponType: 'air_daggers',
+    potion: { id: 'zephyr_elixir', name: 'Zephyr Elixir', icon: '⚡', heal: 55, desc: '+55 HP & Gale Haste (+40% Spd for 15s)' },
+    hp: 90, sta: 70, atk: 11, spd: 125, perk: 'Fastest movement speed & +15% Crit chance'
+  },
+  Water: {
+    color: '#3b82f6',
+    cls: 'Hydromancer Healer',
+    weaponName: 'Holographic Fluid Staff',
+    weaponType: 'water_staff',
+    potion: { id: 'ocean_nectar', name: 'Ocean Nectar', icon: '💧', heal: 95, desc: '+95 HP & Ocean Regeneration (+4 HP/s for 10s)' },
+    hp: 105, sta: 60, atk: 10, spd: 100, perk: 'Heals 5 HP on kill, +50% Potion potency'
+  }
 };
 
 const GUILDS = [
@@ -721,23 +749,26 @@ const Save = {
 function normSave(d) {
   d = d || {};
   const g = GUILDS.find(x => x[0] === d.guild) || GUILDS[0];
+  const e = ELEM[g[1]] || ELEM.Fire;
   const inv = d.inv || {}, bo = d.bounty || {}, fl = d.flags || {}, up = d.upgrades || {};
+  const potObj = e.potion;
   const potCount = int(inv.potions, 2, 0, 99);
   const bagCap = int(d.bagCapacity, 9, 9, 27);
   let bagArr = null;
 
   if (Array.isArray(d.bag) && d.bag.length > 0) {
     bagArr = d.bag.slice(0, bagCap).map(it => it ? {
-      id: it.id || 'potion',
-      name: it.name || 'Field Potion',
+      id: it.id || potObj.id,
+      name: it.name || potObj.name,
       count: int(it.count, 1, 1, 99),
-      icon: it.icon || '🧪'
+      icon: it.icon || potObj.icon,
+      desc: it.desc || potObj.desc
     } : null);
     while (bagArr.length < bagCap) bagArr.push(null);
   } else {
     bagArr = new Array(bagCap).fill(null);
     if (potCount > 0) {
-      bagArr[0] = { id: 'potion', name: 'Field Potion', count: potCount, icon: '🧪' };
+      bagArr[0] = { id: potObj.id, name: potObj.name, count: potCount, icon: potObj.icon, desc: potObj.desc };
     }
   }
 
@@ -1198,15 +1229,17 @@ const Create = {
       guild: g[0], element: g[1], outfit: OUTFITS[s.o], hair: HAIRS[s.h], hairStyle: s.hs
     }, this.t, 'down', true, 2.2);
 
-    T(g[0] + ' Guild', 635, 185, 20, e.color, 'center');
-    T(g[1] + ' Affinity • ' + e.cls, 635, 212, 12, '#93c5fd', 'center');
+    T(g[0] + ' Guild', 635, 180, 20, e.color, 'center');
+    T(g[1] + ' Affinity • ' + e.cls, 635, 206, 12, '#93c5fd', 'center');
 
-    const ds = wrap(g[2], 240, 12);
-    ds.forEach((l, idx) => T(l, 635, 236 + idx * 16, 12, '#cbd5e1', 'center', false));
+    T('⚔️ Weapon: ' + e.weaponName, 635, 226, 11, '#fde047', 'center');
+    T('🧪 Starting Item: 2x ' + e.potion.name + ' (' + e.potion.icon + ')', 635, 244, 11, '#a7f3d0', 'center');
 
-    T('Base HP: ' + e.hp + '  |  STA: ' + e.sta, 635, 310, 12, '#fde047', 'center');
-    T('ATK: ' + e.atk + '  |  SPD: ' + e.spd, 635, 330, 12, '#fde047', 'center');
-    T('Perk: ' + e.perk, 635, 355, 11, '#67e8f9', 'center');
+    const ds = wrap(g[2], 240, 11);
+    ds.forEach((l, idx) => T(l, 635, 268 + idx * 15, 11, '#cbd5e1', 'center', false));
+
+    T('Base HP: ' + e.hp + ' | STA: ' + e.sta + ' | ATK: ' + e.atk, 635, 332, 11, '#fde047', 'center');
+    T('Perk: ' + e.perk, 635, 354, 10, '#67e8f9', 'center');
   }
 };
 
@@ -1406,137 +1439,62 @@ const CLIMBERS = {
 };
 
 /* ================= 16. Chibi Character & Monster Renderers ================= */
-function drawChibiHero(ctx, px, py, p, t, facing = 'down', isMoving = false, scale = 1.0, atkT = 0, atkDur = 0.3) {
-  ctx.save();
-  ctx.translate(px, py);
-  ctx.scale(scale, scale);
-
-  const step = isMoving ? Math.floor(t * 8) % 4 : 0;
-  const bob = isMoving ? (step % 2 === 1 ? -1 : 0) : Math.sin(t * 3) * 0.8;
-  const legOffset = isMoving ? (step === 1 ? -2 : (step === 3 ? 2 : 0)) : 0;
-
-  // Soft oval drop shadow
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-  ctx.beginPath();
-  ctx.ellipse(0, 14, 10, 4, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Adventurer boots with cuffs
-  ctx.fillStyle = '#1e293b';
-  ctx.fillRect(-7, 8 + legOffset, 5, 6 - legOffset);
-  ctx.fillRect(2, 8 - legOffset, 5, 6 + legOffset);
-  ctx.fillStyle = '#475569';
-  ctx.fillRect(-7, 8, 5, 2); ctx.fillRect(2, 8, 5, 2);
-
-  // Cloak / Cape (Flutters dynamically behind hero with physics)
-  const capeSway = isMoving ? Math.sin(t * 12) * 3.5 : Math.sin(t * 2.5) * 1.2;
-  ctx.fillStyle = p.outfit || '#e11d48';
-  if (facing !== 'up') {
-    ctx.beginPath();
-    ctx.moveTo(-9, -4 + bob);
-    ctx.lineTo(-11 + capeSway, 10 + bob);
-    ctx.lineTo(11 + capeSway, 10 + bob);
-    ctx.lineTo(9, -4 + bob);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  // Tunic & Leather Armor Body
-  ctx.fillStyle = '#1e293b'; ctx.fillRect(-7, -6 + bob, 14, 12);
-  ctx.fillStyle = p.outfit || '#e11d48'; ctx.fillRect(-5, -6 + bob, 10, 10);
-  ctx.fillStyle = '#d97706'; ctx.fillRect(-6, 2 + bob, 12, 2); // Leather Belt
-  ctx.fillStyle = '#facc15'; ctx.fillRect(-2, 1 + bob, 4, 4); // Gold Buckle
-
-  // Elemental Crest on Chest
-  const elColor = (p.element && ELEM[p.element]) ? ELEM[p.element].color : (p.elc || '#38bdf8');
-  ctx.fillStyle = elColor;
-  ctx.fillRect(-2, -3 + bob, 4, 4);
-
-  // Cape in front when facing Up
-  if (facing === 'up') {
-    ctx.fillStyle = p.outfit || '#e11d48';
-    ctx.beginPath();
-    ctx.moveTo(-8, -4 + bob);
-    ctx.lineTo(-10 + capeSway, 10 + bob);
-    ctx.lineTo(10 + capeSway, 10 + bob);
-    ctx.lineTo(8, -4 + bob);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  // Chibi Head & Anime Face
-  ctx.fillStyle = '#fed7aa'; ctx.fillRect(-8, -20 + bob, 16, 14); // Skin
-  ctx.fillStyle = '#fca5a5'; ctx.fillRect(-7, -11 + bob, 3, 2); ctx.fillRect(4, -11 + bob, 3, 2); // Rosy blush
-
-  if (facing === 'up') {
-    ctx.fillStyle = p.hair || '#18181b';
-    ctx.fillRect(-8, -22 + bob, 16, 16);
-  } else {
-    // Big Expressive Anime Eyes with Highlights & Realistic Blinking
-    const blink = Math.floor(t * 1.5) % 8 === 0;
-    if (blink) {
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(-6, -14 + bob, 4, 1.5); ctx.fillRect(2, -14 + bob, 4, 1.5);
-    } else {
-      ctx.fillStyle = '#0284c7';
-      if (facing === 'down') {
-        ctx.fillRect(-6, -15 + bob, 4, 5); ctx.fillRect(2, -15 + bob, 4, 5);
-        ctx.fillStyle = '#0f172a'; ctx.fillRect(-5, -14 + bob, 3, 3); ctx.fillRect(3, -14 + bob, 3, 3);
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(-5, -15 + bob, 2, 2); ctx.fillRect(3, -15 + bob, 2, 2);
-      } else if (facing === 'left') {
-        ctx.fillRect(-7, -15 + bob, 4, 5);
-        ctx.fillStyle = '#0f172a'; ctx.fillRect(-6, -14 + bob, 3, 3);
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(-6, -15 + bob, 2, 2);
-      } else if (facing === 'right') {
-        ctx.fillRect(3, -15 + bob, 4, 5);
-        ctx.fillStyle = '#0f172a'; ctx.fillRect(3, -14 + bob, 3, 3);
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(3, -15 + bob, 2, 2);
-      }
-    }
-  }
-
-  // Layered Pixel Hair with Highlight Sheen
-  ctx.fillStyle = p.hair || '#18181b';
-  ctx.fillRect(-9, -24 + bob, 18, 7); // Hair crown
-  ctx.fillRect(-10, -20 + bob, 3, 10); ctx.fillRect(7, -20 + bob, 3, 10); // Sideburns
-  if (facing !== 'up') {
-    ctx.fillRect(-6, -18 + bob, 4, 3); ctx.fillRect(1, -18 + bob, 4, 3); // Front bangs
-  }
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.45)'; ctx.fillRect(-6, -23 + bob, 12, 2); // Hair highlight
-
-  // ================= DYNAMIC WEAPON SWINGING & VISIBLE BLADE =================
+function drawWeaponGraphic(ctx, hx, hy, type, elColor, t, atkT, atkDur, dir) {
   const isAttacking = atkT > 0;
   if (isAttacking) {
     const progress = clamp(1 - atkT / (atkDur || 0.3), 0, 1);
+    // Determine swing angle based on attack direction: always swings downward/forward!
     let baseAngle = 0;
-    if (facing === 'down') baseAngle = Math.PI / 2;
-    else if (facing === 'up') baseAngle = -Math.PI / 2;
-    else if (facing === 'left') baseAngle = Math.PI;
-    else if (facing === 'right') baseAngle = 0;
+    let swingAngle = 0;
+    if (dir === 'down') {
+      baseAngle = Math.PI / 2;
+      swingAngle = 0.2 + progress * 2.6; // across front
+    } else if (dir === 'up') {
+      baseAngle = -Math.PI / 2;
+      swingAngle = -0.2 - progress * 2.6; // across back
+    } else if (dir === 'left') {
+      baseAngle = Math.PI;
+      swingAngle = (Math.PI + 1.2) - progress * 2.4; // top to bottom forward slash
+    } else { // right
+      baseAngle = 0;
+      swingAngle = -1.2 + progress * 2.4; // top to bottom forward slash
+    }
 
-    // Swing from -1.1 rad to +1.1 rad across facing direction
-    const swingAngle = baseAngle - 1.1 + progress * 2.2;
-    const hx = Math.cos(baseAngle) * 4;
-    const hy = Math.sin(baseAngle) * 4;
-    const bladeLen = 22;
+    const bladeLen = type === 'air_daggers' ? 17 : (type === 'earth_hammer' ? 20 : 23);
 
     ctx.save();
-    ctx.translate(hx, hy + bob);
+    ctx.translate(hx, hy);
     ctx.rotate(swingAngle);
 
-    // Metallic Blade
-    ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(0, -2, bladeLen, 4);
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillRect(0, 0, bladeLen - 2, 2);
-    // Elemental Guard
-    ctx.fillStyle = elColor;
-    ctx.fillRect(0, -5, 4, 10);
-    // Pommel & Hilt
-    ctx.fillStyle = '#78350f';
-    ctx.fillRect(-6, -1.5, 6, 3);
-    ctx.fillStyle = '#facc15';
-    ctx.fillRect(-7, -2, 2, 4);
+    if (type === 'earth_hammer') {
+      // Shaft
+      ctx.fillStyle = '#475569'; ctx.fillRect(0, -2, bladeLen - 7, 4);
+      // Heavy Hammer Head
+      ctx.fillStyle = '#334155'; ctx.fillRect(bladeLen - 8, -6, 12, 12);
+      ctx.fillStyle = elColor; ctx.fillRect(bladeLen - 5, -3, 6, 6); // core
+      // Pommel & Hilt
+      ctx.fillStyle = '#78350f'; ctx.fillRect(-6, -1.5, 6, 3);
+      ctx.fillStyle = '#84cc16'; ctx.fillRect(-7, -2, 2, 4);
+    } else if (type === 'air_daggers') {
+      // Dual Neon Dagger
+      ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, -1.5, bladeLen, 3);
+      ctx.fillStyle = elColor; ctx.fillRect(0, -4, 3, 8);
+      ctx.fillStyle = '#1e293b'; ctx.fillRect(-5, -1, 5, 2);
+      ctx.fillStyle = '#06b6d4'; ctx.fillRect(-6, -1.5, 2, 3);
+    } else if (type === 'water_staff') {
+      // Staff Shaft
+      ctx.fillStyle = '#60a5fa'; ctx.fillRect(0, -2, bladeLen - 6, 4);
+      // Fluid Trident Head
+      ctx.fillStyle = '#38bdf8'; ctx.fillRect(bladeLen - 7, -6, 8, 12);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(bladeLen - 3, -2, 5, 4);
+      ctx.fillStyle = '#1e293b'; ctx.fillRect(-6, -1.5, 6, 3);
+    } else {
+      // Blazing Techno-Staff / Flame Greatsword
+      ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, -2, bladeLen, 4);
+      ctx.fillStyle = '#f97316'; ctx.fillRect(0, -5, 4, 10);
+      ctx.fillStyle = '#78350f'; ctx.fillRect(-6, -1.5, 6, 3);
+      ctx.fillStyle = '#facc15'; ctx.fillRect(-7, -2, 2, 4);
+    }
     ctx.restore();
 
     // Glowing Crescent Elemental Slash Arc Trail
@@ -1546,34 +1504,257 @@ function drawChibiHero(ctx, px, py, p, t, facing = 'down', isMoving = false, sca
     ctx.lineCap = 'round';
     ctx.globalAlpha = 0.85 * (1 - progress);
     ctx.beginPath();
-    ctx.arc(hx, hy + bob, bladeLen + 4, swingAngle - 0.7, swingAngle + 0.3);
+    ctx.arc(hx, hy, bladeLen + 5, swingAngle - 0.7, swingAngle + 0.3);
     ctx.stroke();
 
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.arc(hx, hy + bob, bladeLen + 3, swingAngle - 0.5, swingAngle + 0.2);
+    ctx.arc(hx, hy, bladeLen + 4, swingAngle - 0.5, swingAngle + 0.2);
     ctx.stroke();
 
     // Spark Burst at Blade Tip
-    const tipX = hx + Math.cos(swingAngle) * bladeLen;
-    const tipY = hy + bob + Math.sin(swingAngle) * bladeLen;
+    const tipX = hx + Math.cos(swingAngle) * (bladeLen + 2);
+    const tipY = hy + Math.sin(swingAngle) * (bladeLen + 2);
     ctx.fillStyle = '#ffffff'; ctx.fillRect(tipX - 2, tipY - 2, 4, 4);
     ctx.fillStyle = elColor; ctx.fillRect(tipX - 1, tipY - 1, 2, 2);
     ctx.restore();
+
   } else {
-    // When Idle or Moving: Hero holds weapon ready in hand with glowing elemental gem guard!
-    const wx = facing === 'left' ? -13 : 10;
-    const wy = -1 + bob;
-    // Blade
-    ctx.fillStyle = '#e2e8f0'; ctx.fillRect(wx, wy - 9, 3, 17);
-    ctx.fillStyle = '#94a3b8'; ctx.fillRect(wx + 2, wy - 9, 1, 17);
-    // Elemental Crossguard
-    ctx.fillStyle = elColor; ctx.fillRect(wx - 2, wy - 2, 7, 3);
-    // Pommel
-    ctx.fillStyle = '#facc15'; ctx.fillRect(wx - 0.5, wy - 11, 4, 3);
-    // Leather Wrapped Grip
-    ctx.fillStyle = '#78350f'; ctx.fillRect(wx, wy - 8, 3, 6);
+    // ================= WEAPON IN IDLE / MOVING: 100% PROPERLY UPRIGHT! =================
+    // Hand is at (hx, hy). The pommel is at the BOTTOM, grip in hand, blade points UP into the air!
+    if (type === 'earth_hammer') {
+      // Pommel at bottom
+      ctx.fillStyle = '#84cc16'; ctx.fillRect(hx - 0.5, hy + 5, 4, 3);
+      // Grip in hand
+      ctx.fillStyle = '#78350f'; ctx.fillRect(hx, hy - 2, 3, 7);
+      // Shaft extending up
+      ctx.fillStyle = '#475569'; ctx.fillRect(hx, hy - 14, 3, 12);
+      // Heavy Stone Hammer Head on top
+      ctx.fillStyle = '#334155'; ctx.fillRect(hx - 4, hy - 22, 11, 9);
+      ctx.fillStyle = elColor; ctx.fillRect(hx - 1, hy - 19, 5, 4); // glowing emerald core
+      ctx.fillStyle = '#65a30d'; ctx.fillRect(hx - 5, hy - 18, 2, 2); ctx.fillRect(hx + 6, hy - 18, 2, 2);
+    } else if (type === 'air_daggers') {
+      // Main hand neon dagger pointing UP
+      ctx.fillStyle = '#06b6d4'; ctx.fillRect(hx, hy + 4, 2, 2); // pommel at bottom
+      ctx.fillStyle = '#1e293b'; ctx.fillRect(hx, hy - 1, 2, 5); // grip
+      ctx.fillStyle = '#22d3ee'; ctx.fillRect(hx, hy - 14, 2, 13); // blade pointing UP!
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(hx + 1, hy - 13, 1, 10);
+      // Off-hand dagger
+      ctx.fillStyle = '#22d3ee'; ctx.fillRect(hx - 12, hy - 10, 2, 11);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(hx - 12, hy - 9, 1, 8);
+    } else if (type === 'water_staff') {
+      // Pommel at bottom
+      ctx.fillStyle = '#3b82f6'; ctx.fillRect(hx, hy + 6, 3, 3);
+      // Staff grip in hand
+      ctx.fillStyle = '#1e293b'; ctx.fillRect(hx, hy - 2, 3, 8);
+      // Shaft extending UP
+      ctx.fillStyle = '#60a5fa'; ctx.fillRect(hx, hy - 20, 3, 18);
+      // Holographic Trident / Crystal Head on top!
+      ctx.fillStyle = '#38bdf8'; ctx.fillRect(hx - 3, hy - 24, 9, 4);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(hx, hy - 28, 3, 5); // center crystal
+      ctx.fillStyle = '#38bdf8'; ctx.fillRect(hx - 3, hy - 27, 2, 3); ctx.fillRect(hx + 4, hy - 27, 2, 3);
+    } else {
+      // Blazing Techno-Staff / Flameblade
+      // Pommel at bottom
+      ctx.fillStyle = '#facc15'; ctx.fillRect(hx, hy + 5, 3, 3);
+      // Grip in hand
+      ctx.fillStyle = '#78350f'; ctx.fillRect(hx, hy - 2, 3, 7);
+      // Crossguard
+      ctx.fillStyle = '#f97316'; ctx.fillRect(hx - 2, hy - 4, 7, 3);
+      // Glowing Molten Blade pointing UP into the air!
+      ctx.fillStyle = '#ef4444'; ctx.fillRect(hx, hy - 22, 3, 18);
+      ctx.fillStyle = '#fde047'; ctx.fillRect(hx + 0.5, hy - 20, 2, 14);
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(hx + 0.5, hy - 23, 2, 3);
+      // Flame Ember particle
+      ctx.fillStyle = '#fb923c'; ctx.fillRect(hx + Math.sin(t * 8) * 2.5, hy - 26, 2, 2);
+    }
+  }
+}
+
+function drawChibiHero(ctx, px, py, p, t, facing = 'down', isMoving = false, scale = 1.0, atkT = 0, atkDur = 0.3) {
+  ctx.save();
+  ctx.translate(px, py);
+  ctx.scale(scale, scale);
+
+  const el = p.element || 'Fire';
+  const elData = ELEM[el] || ELEM.Fire;
+  const elColor = elData.color;
+  const weaponType = elData.weaponType || 'fire_staff';
+
+  // Continuous energetic walk cycle: smooth leg stride and body bob on EVERY pace!
+  const walkPhase = isMoving ? t * 13 : 0;
+  const stride = isMoving ? Math.sin(walkPhase) * 4 : 0;
+  const stepBob = isMoving ? Math.abs(Math.sin(walkPhase)) * -2 : Math.sin(t * 3) * 0.7;
+  const capeSway = isMoving ? Math.sin(t * 12) * 4 : Math.sin(t * 2.5) * 1.2;
+
+  // Soft oval drop shadow
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  ctx.beginPath();
+  ctx.ellipse(0, 14, 10, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const isLeft = facing === 'left';
+  const isRight = facing === 'right';
+  const isUp = facing === 'up';
+
+  if (isLeft || isRight) {
+    // ================= TRUE SIDE VIEW (AUTHENTIC GBA PROFILE - NO SIDEWAYS GLIDE!) =================
+    ctx.save();
+    if (isLeft) ctx.scale(-1, 1); // Flip horizontally for natural left-facing walking & striding
+
+    // Cloak / Cape (Flutters behind the hero to the left)
+    ctx.fillStyle = p.outfit || '#e11d48';
+    ctx.beginPath();
+    ctx.moveTo(-4, -4 + stepBob);
+    ctx.lineTo(-12 - capeSway, 10 + stepBob);
+    ctx.lineTo(2 - capeSway, 10 + stepBob);
+    ctx.lineTo(1, -4 + stepBob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Side Boots (Front leg strides forward +X, back leg strides back -X)
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(1 + stride, 8 + Math.max(0, -stride) * 0.5, 6, 6); // Front foot
+    ctx.fillRect(-5 - stride, 8 + Math.max(0, stride) * 0.5, 6, 6); // Back foot
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(1 + stride, 8, 5, 2);
+    ctx.fillRect(-5 - stride, 8, 5, 2);
+
+    // Side Profile Tunic & Armor Body (Slimmer side angle)
+    ctx.fillStyle = '#1e293b'; ctx.fillRect(-5, -6 + stepBob, 11, 12);
+    ctx.fillStyle = p.outfit || '#e11d48'; ctx.fillRect(-4, -6 + stepBob, 9, 10);
+    ctx.fillStyle = '#d97706'; ctx.fillRect(-5, 2 + stepBob, 11, 2); // Side Belt
+    ctx.fillStyle = '#facc15'; ctx.fillRect(4, 1 + stepBob, 2, 4); // Buckle on front hip
+
+    // Elemental Crest on side chest
+    ctx.fillStyle = elColor;
+    ctx.fillRect(2, -3 + stepBob, 3, 4);
+
+    // Chibi Head & Anime Face in Profile
+    ctx.fillStyle = '#fed7aa'; ctx.fillRect(-5, -20 + stepBob, 12, 14); // Skin
+    ctx.fillRect(7, -14 + stepBob, 2, 3); // Nose/chin profile
+    ctx.fillStyle = '#fca5a5'; ctx.fillRect(3, -11 + stepBob, 3, 2); // Blush
+
+    // Single Anime Eye looking forward (right)
+    const blink = Math.floor(t * 1.5) % 8 === 0;
+    if (blink) {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(3, -14 + stepBob, 4, 1.5);
+    } else {
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(3, -15 + stepBob, 4, 5);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(3, -14 + stepBob, 3, 3);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(4, -15 + stepBob, 2, 2); // Sparkle
+    }
+
+    // Layered Hair (Side profile)
+    ctx.fillStyle = p.hair || '#18181b';
+    ctx.fillRect(-7, -24 + stepBob, 14, 7); // Crown
+    ctx.fillRect(-8, -20 + stepBob, 4, 11); // Back hair
+    ctx.fillRect(0, -18 + stepBob, 4, 4); // Bangs
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.fillRect(-4, -23 + stepBob, 9, 2); // Highlight
+
+    // Arm holding weapon
+    ctx.fillStyle = p.outfit || '#e11d48';
+    ctx.fillRect(1, -2 + stepBob, 4, 6);
+    ctx.fillStyle = '#fed7aa';
+    ctx.fillRect(3, 2 + stepBob, 3, 3); // Hand
+
+    // Draw Weapon in side view (pointing forward and UPRIGHT)
+    drawWeaponGraphic(ctx, 5, 1 + stepBob, weaponType, elColor, t, atkT, atkDur, 'right');
+
+    ctx.restore();
+
+  } else if (isUp) {
+    // ================= BACK VIEW (FACING UP) =================
+    // Boots walking up
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-7, 8 + stride, 5, 6);
+    ctx.fillRect(2, 8 - stride, 5, 6);
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(-7, 8, 5, 2); ctx.fillRect(2, 8, 5, 2);
+
+    // Full Cloak covering back
+    ctx.fillStyle = p.outfit || '#e11d48';
+    ctx.beginPath();
+    ctx.moveTo(-9, -4 + stepBob);
+    ctx.lineTo(-11 + capeSway, 10 + stepBob);
+    ctx.lineTo(11 + capeSway, 10 + stepBob);
+    ctx.lineTo(9, -4 + stepBob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Back of Head & Hair
+    ctx.fillStyle = '#fed7aa'; ctx.fillRect(-8, -12 + stepBob, 16, 6);
+    ctx.fillStyle = p.hair || '#18181b';
+    ctx.fillRect(-9, -24 + stepBob, 18, 16);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.fillRect(-6, -22 + stepBob, 12, 2);
+
+    // Weapon held upright at right side
+    drawWeaponGraphic(ctx, 9, 0 + stepBob, weaponType, elColor, t, atkT, atkDur, 'up');
+
+  } else {
+    // ================= FRONT VIEW (FACING DOWN) =================
+    // Cloak behind
+    ctx.fillStyle = p.outfit || '#e11d48';
+    ctx.beginPath();
+    ctx.moveTo(-9, -4 + stepBob);
+    ctx.lineTo(-11 + capeSway, 10 + stepBob);
+    ctx.lineTo(11 + capeSway, 10 + stepBob);
+    ctx.lineTo(9, -4 + stepBob);
+    ctx.closePath();
+    ctx.fill();
+
+    // Boots stepping forward/back alternating
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-7, 8 + stride, 5, 6 - stride * 0.3);
+    ctx.fillRect(2, 8 - stride, 5, 6 + stride * 0.3);
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(-7, 8, 5, 2); ctx.fillRect(2, 8, 5, 2);
+
+    // Tunic & Armor Body
+    ctx.fillStyle = '#1e293b'; ctx.fillRect(-7, -6 + stepBob, 14, 12);
+    ctx.fillStyle = p.outfit || '#e11d48'; ctx.fillRect(-5, -6 + stepBob, 10, 10);
+    ctx.fillStyle = '#d97706'; ctx.fillRect(-6, 2 + stepBob, 12, 2);
+    ctx.fillStyle = '#facc15'; ctx.fillRect(-2, 1 + stepBob, 4, 4);
+
+    // Crest
+    ctx.fillStyle = elColor;
+    ctx.fillRect(-2, -3 + stepBob, 4, 4);
+
+    // Chibi Head & Anime Face
+    ctx.fillStyle = '#fed7aa'; ctx.fillRect(-8, -20 + stepBob, 16, 14);
+    ctx.fillStyle = '#fca5a5'; ctx.fillRect(-7, -11 + stepBob, 3, 2); ctx.fillRect(4, -11 + stepBob, 3, 2);
+
+    // Two Big Anime Eyes with highlights
+    const blink = Math.floor(t * 1.5) % 8 === 0;
+    if (blink) {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-6, -14 + stepBob, 4, 1.5); ctx.fillRect(2, -14 + stepBob, 4, 1.5);
+    } else {
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(-6, -15 + stepBob, 4, 5); ctx.fillRect(2, -15 + stepBob, 4, 5);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-5, -14 + stepBob, 3, 3); ctx.fillRect(3, -14 + stepBob, 3, 3);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-5, -15 + stepBob, 2, 2); ctx.fillRect(3, -15 + stepBob, 2, 2);
+    }
+
+    // Hair
+    ctx.fillStyle = p.hair || '#18181b';
+    ctx.fillRect(-9, -24 + stepBob, 18, 7);
+    ctx.fillRect(-10, -20 + stepBob, 3, 10); ctx.fillRect(7, -20 + stepBob, 3, 10);
+    ctx.fillRect(-6, -18 + stepBob, 4, 3); ctx.fillRect(1, -18 + stepBob, 4, 3);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.fillRect(-6, -23 + stepBob, 12, 2);
+
+    // Weapon in hand (right hand, held proudly UPRIGHT!)
+    drawWeaponGraphic(ctx, 9, 1 + stepBob, weaponType, elColor, t, atkT, atkDur, 'down');
   }
 
   ctx.restore();
@@ -1933,16 +2114,26 @@ const World = {
   },
 
   talk(k) {
-    const c = CLIMBERS[k], p = G.p, ec = ELEM[c.el].color, lines = c.lines.slice();
+    const c = CLIMBERS[k], p = G.p, elData = ELEM[c.el], ec = elData.color, lines = c.lines.slice();
+    const pot = elData.potion;
     if (p.element === c.el) lines.push('A fellow ' + c.el + ' affinity climber! Our power draws from the exact same constellation.');
     if (p.floor > 1) lines.push('You reached Floor ' + p.floor + ' already? Impressive climb, ' + p.name + '!');
-    if (!p.flags[k]) { lines.push('Here, take this field potion. Consider it an alliance for your climb!'); }
+    if (!p.flags[k]) {
+      lines.push('Here, take this ' + pot.name + ' (' + pot.icon + ')! ' + pot.desc);
+    }
     Dlg.say(c.name + ' (' + c.title + ')', ec, lines, c.portrait, () => {
       if (!p.flags[k]) {
         p.flags[k] = true;
         p.inv.potions++;
-        toast('★ +1 Field Potion from ' + c.name);
-        beep(880, .1);
+        // Add unique elemental potion to bag slot
+        let potSlot = p.bag.find(it => it && it.id === pot.id);
+        if (potSlot) { potSlot.count++; }
+        else {
+          let emptyIdx = p.bag.indexOf(null);
+          if (emptyIdx >= 0) p.bag[emptyIdx] = { id: pot.id, name: pot.name, count: 1, icon: pot.icon, desc: pot.desc };
+        }
+        toast('★ +1 ' + pot.name + ' (' + pot.icon + ') from ' + c.name);
+        beep(880, .15, 'triangle', .08);
       }
     });
   },
@@ -1993,13 +2184,13 @@ const World = {
         fn: () => {
           p.inv.shards -= 30;
           p.inv.potions++;
-          let potSlot = p.bag.find(it => it && it.id === 'potion');
+          let potSlot = p.bag.find(it => it && (it.id === 'potion' || it.name.includes('Potion')));
           if (potSlot) { potSlot.count++; }
           else {
             let emptyIdx = p.bag.indexOf(null);
-            if (emptyIdx >= 0) p.bag[emptyIdx] = { id: 'potion', name: 'Field Potion', count: 1, icon: '🧪' };
+            if (emptyIdx >= 0) p.bag[emptyIdx] = { id: 'potion', name: 'Field Potion', count: 1, icon: '🧪', desc: '+60 HP restoration' };
           }
-          toast('★ Potion added to Bag!');
+          toast('★ Field Potion added to Bag!');
           autosave();
         }
       },
@@ -2105,26 +2296,65 @@ const World = {
   },
 
   drinkPotionFromSlot(slotIdx) {
-    const p = G.p, st = sx(p);
+    const p = G.p, st = sx(p), pl = this.pl;
     const item = p.bag[slotIdx];
-    if (item && item.id === 'potion') {
-      if (p.hp >= st.maxHp) {
-        toast('HP is already full!');
-        beep(300, .08, 'square', .04);
-        return;
-      }
-      item.count--;
-      const healAmt = (p.element === 'Water' ? 90 : 60);
-      if (item.count <= 0) {
-        p.bag[slotIdx] = null;
-      }
-      p.inv.potions = p.bag.reduce((s, it) => s + (it && it.id === 'potion' ? it.count : 0), 0);
-      toast('+' + healAmt + ' HP Restored!');
-      this.heal(healAmt);
-      beep(880, .15, 'sine', .08);
-      haptic(20);
-      autosave();
+    if (!item) return;
+
+    if (p.hp >= st.maxHp && !item.id.includes('elixir') && !item.id.includes('nectar')) {
+      toast('HP is already full!');
+      beep(300, .08, 'square', .04);
+      return;
     }
+
+    item.count--;
+    let healAmt = 60;
+    let toastMsg = '+60 HP Restored!';
+    let ringColor = '#22c55e';
+
+    if (item.id === 'flame_elixir' || item.name.includes('Flame')) {
+      healAmt = 70;
+      pl.hasteT = 15;
+      pl.hasteM = 1.25;
+      toastMsg = '🔥 Flame Elixir! +70 HP & Flame Surge active (15s)';
+      ringColor = '#f97316';
+      beep(960, .2, 'triangle', .08);
+    } else if (item.id === 'terra_elixir' || item.name.includes('Terra')) {
+      healAmt = 65;
+      pl.shieldT = 8;
+      toastMsg = '🛡️ Terra Elixir! +65 HP & Stone Barrier active (8s)';
+      ringColor = '#84cc16';
+      beep(720, .25, 'triangle', .08);
+    } else if (item.id === 'zephyr_elixir' || item.name.includes('Zephyr')) {
+      healAmt = 55;
+      pl.hasteT = 15;
+      pl.hasteM = 1.45;
+      p.sta = st.maxSta;
+      toastMsg = '⚡ Zephyr Elixir! +55 HP, Gale Speed +45% & Full Stamina!';
+      ringColor = '#06b6d4';
+      beep(1080, .18, 'sine', .08);
+    } else if (item.id === 'ocean_nectar' || item.name.includes('Ocean')) {
+      healAmt = 95;
+      pl.regenT = 10;
+      pl.regenR = 4;
+      toastMsg = '💧 Ocean Nectar! +95 HP & Tidal Regeneration (10s)';
+      ringColor = '#3b82f6';
+      beep(880, .22, 'sine', .08);
+    } else {
+      healAmt = (p.element === 'Water' ? 90 : 60);
+      toastMsg = '+' + healAmt + ' HP Restored!';
+      beep(880, .15, 'sine', .08);
+    }
+
+    if (item.count <= 0) {
+      p.bag[slotIdx] = null;
+    }
+    p.inv.potions = p.bag.reduce((s, it) => s + (it && (it.id.includes('potion') || it.id.includes('elixir') || it.id.includes('nectar')) ? it.count : 0), 0);
+
+    toast(toastMsg);
+    this.heal(healAmt);
+    this.ring(pl.x, pl.y - 8, 48, ringColor);
+    haptic(20);
+    autosave();
   },
 
   pauseMenu() {
@@ -3154,10 +3384,10 @@ const World = {
     const selItem = p.bag[p.selectedSlot];
     if (selItem) {
       ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-      ctx.fillRect(280, startY - 22, 240, 18);
+      ctx.fillRect(260, startY - 22, 280, 18);
       ctx.strokeStyle = '#facc15'; ctx.lineWidth = 1;
-      ctx.strokeRect(280.5, startY - 21.5, 239, 17);
-      T(`${selItem.icon} ${selItem.name} (x${selItem.count}) • [Click to Drink]`, 400, startY - 18, 10, '#fde047', 'center');
+      ctx.strokeRect(260.5, startY - 21.5, 279, 17);
+      T(`${selItem.icon} ${selItem.name} (x${selItem.count}) • [Click / J to Drink]`, 400, startY - 18, 10, '#fde047', 'center');
     } else {
       T(`[${p.selectedSlot + 1}] Empty Slot`, 400, startY - 16, 9, '#94a3b8', 'center');
     }
@@ -3285,7 +3515,7 @@ const World = {
       const self = this;
       this.bagActionMenu = Menu([
         {
-          label: () => item.id === 'potion' ? 'Drink Potion (+60 HP)' : 'Use Item',
+          label: () => item.name ? `Drink ${item.name}` : 'Use Item',
           fn: () => {
             self.drinkPotionFromSlot(curIdx);
             self.bagActionMenu = null;
@@ -3377,7 +3607,7 @@ const World = {
     const activeItem = p.bag[this.bagCursor];
     if (activeItem) {
       T(`${activeItem.icon} ${activeItem.name} (x${activeItem.count})`, dx + 12, dy + 10, 12, '#fde047');
-      T('Emergency alchemical field tonic. Restores 60 HP (+90 for Water affinity). Press [J] to drink or arrange.', dx + 12, dy + 28, 10, '#cbd5e1', 'left', false);
+      T(activeItem.desc || 'Alchemical field elixir. Press [J] to drink or arrange.', dx + 12, dy + 28, 10, '#cbd5e1', 'left', false);
     } else {
       T(`Slot ${this.bagCursor + 1}: Empty Compartment`, dx + 12, dy + 10, 11, '#94a3b8');
       T('Expand your backpack pouch at the Safe Haven Merchant for additional rows.', dx + 12, dy + 28, 10, '#64748b', 'left', false);
@@ -3500,5 +3730,5 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 
-window.__astral = { G, World, Title, Slots, Create, go, get scene() { return scene; } };
+window.__astral = { G, World, Title, Slots, Create, Dlg, ELEM, GUILDS, go, get scene() { return scene; } };
 })();
